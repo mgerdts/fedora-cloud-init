@@ -2,7 +2,7 @@
 
 Name:           cloud-init
 Version:        0.7.6
-Release:        4.20140218bzr1060%{?dist}
+Release:        5.20140218bzr1060%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
@@ -178,6 +178,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.7.6-5.20140218bzr1060
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
 * Sat Feb 21 2015 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.6-4.20140218bzr1060
 - Updated to bzr snapshot 1060 for python 3 support
 - Switched to python 3 [RH:1024357]
