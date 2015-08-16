@@ -2,15 +2,15 @@
 
 Name:           cloud-init
 Version:        0.7.6
-Release:        5.20140218bzr1060%{?dist}
+Release:        6.20150813bzr1137%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
 #Source0:        https://launchpad.net/cloud-init/trunk/%{version}/+download/%{name}-%{version}.tar.gz
-# bzr export -r 1060 cloud-init-0.7.6-bzr1060.tar.gz lp:cloud-init
-Source0:        cloud-init-0.7.6-bzr1060.tar.gz
+# bzr export -r 1137 cloud-init-0.7.6-bzr1137.tar.gz lp:cloud-init
+Source0:        cloud-init-0.7.6-bzr1137.tar.gz
 Source1:        cloud-init-fedora.cfg
 Source2:        cloud-init-README.fedora
 Source3:        cloud-init-tmpfiles.conf
@@ -30,12 +30,6 @@ Patch3:         cloud-init-0.7.6-ecdsa.patch
 # https://bugs.launchpad.net/cloud-init/+bug/1354694
 # https://bugzilla.redhat.com/show_bug.cgi?id=1126365
 Patch4:         cloud-init-0.7.6-bzr1060-groupadd-list.patch
-
-# Change network.target systemd deps to network-online.target
-# https://bugzilla.redhat.com/show_bug.cgi?id=1110731
-# https://bugzilla.redhat.com/show_bug.cgi?id=1112817
-# https://bugzilla.redhat.com/show_bug.cgi?id=1147613
-Patch5:         cloud-init-0.7.6-bzr1060-network-online.patch
 
 # Use dnf instead of yum when available
 # https://bugzilla.redhat.com/show_bug.cgi?id=1194451
@@ -63,6 +57,7 @@ BuildRequires:  python3-jsonpatch
 BuildRequires:  python3-mock
 BuildRequires:  python3-nose
 BuildRequires:  python3-oauthlib
+BuildRequires:  python3-prettytable
 BuildRequires:  python3-pyserial
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-requests
@@ -96,7 +91,7 @@ ssh keys and to let the user run various scripts.
 
 
 %prep
-%autosetup -p1 -n %{name}-%{version}-bzr1060
+%autosetup -p1 -n %{name}-%{version}-bzr1137
 
 # Change shebangs
 sed -i -e 's|#!/usr/bin/env python|#!/usr/bin/env python3|' \
@@ -155,12 +150,14 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %license LICENSE
 %doc ChangeLog README.fedora
+%doc doc/*
 %config(noreplace) %{_sysconfdir}/cloud/cloud.cfg
 %dir               %{_sysconfdir}/cloud/cloud.cfg.d
 %config(noreplace) %{_sysconfdir}/cloud/cloud.cfg.d/*.cfg
 %doc               %{_sysconfdir}/cloud/cloud.cfg.d/README
 %dir               %{_sysconfdir}/cloud/templates
 %config(noreplace) %{_sysconfdir}/cloud/templates/*
+/lib/udev/rules.d/66-azure-ephemeral.rules
 %{_unitdir}/cloud-config.service
 %{_unitdir}/cloud-config.target
 %{_unitdir}/cloud-final.service
@@ -178,6 +175,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Aug 13 2015 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.6-6.20150813bzr1137
+- Updated to bzr snapshot 1137
+
 * Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.7.6-5.20140218bzr1060
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
