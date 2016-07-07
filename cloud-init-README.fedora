@@ -1,5 +1,12 @@
 The following cloud-init modules are currently unsupported on this OS:
- - apt_update_upgrade ('apt_update', 'apt_upgrade', 'apt_mirror', 'apt_preserve_sources_list', 'apt_old_mirror', 'apt_sources', 'debconf_selections', 'packages' options)
- - byobu ('byobu_by_default' option)
+ - apt-configure
+ - apt-pipelining
+ - apt_update_upgrade
+ - byobu
  - chef
+ - emit_upstart
+ - fan
  - grub_dpkg
+ - landscape
+ - lxd
+ - snappy

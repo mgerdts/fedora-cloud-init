@@ -1,52 +1,45 @@
-%{!?license: %global license %%doc}
-
 Name:           cloud-init
 Version:        0.7.6
-Release:        8.20150813bzr1137%{?dist}
+Release:        9.20160622bzr1245%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
 #Source0:        https://launchpad.net/cloud-init/trunk/%{version}/+download/%{name}-%{version}.tar.gz
-# bzr export -r 1137 cloud-init-0.7.6-bzr1137.tar.gz lp:cloud-init
-Source0:        cloud-init-0.7.6-bzr1137.tar.gz
+# bzr export -r 1245 cloud-init-0.7.6-bzr1245.tar.gz lp:cloud-init
+Source0:        cloud-init-0.7.6-bzr1245.tar.gz
 Source1:        cloud-init-fedora.cfg
 Source2:        cloud-init-README.fedora
 Source3:        cloud-init-tmpfiles.conf
+
+Patch0:         cloud-init-0.7.6-bzr1245-fedora.patch
 
 # Fix rsyslog log filtering
 # https://code.launchpad.net/~gholms/cloud-init/rsyslog-programname/+merge/186906
 Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
 
-# Systemd 213 removed the --quiet option from ``udevadm settle''
-Patch2:         cloud-init-0.7.5-udevadm-quiet.patch
-
 # Add 3 ecdsa-sha2-nistp* ssh key types now that they are standardized
 # https://bugzilla.redhat.com/show_bug.cgi?id=1151824
-Patch3:         cloud-init-0.7.6-ecdsa.patch
+Patch3:         cloud-init-0.7.6-bzr1245-ecdsa.patch
 
 # Handle whitespace in lists of groups to add new users to
 # https://bugs.launchpad.net/cloud-init/+bug/1354694
 # https://bugzilla.redhat.com/show_bug.cgi?id=1126365
-Patch4:         cloud-init-0.7.6-bzr1060-groupadd-list.patch
+Patch4:         cloud-init-0.7.6-bzr1245-groupadd-list.patch
 
 # Use dnf instead of yum when available
 # https://bugzilla.redhat.com/show_bug.cgi?id=1194451
 Patch7:         cloud-init-0.7.6-dnf.patch
 
-# Deal with noarch -> arch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1067089
-#
-# In cloud-init-0.7.6-4 we switched back to noarch now that it uses
-# sysfs for DMI data on linux.
-Obsoletes:      cloud-init < 0.7.6-4
-
 BuildArch:      noarch
 
+BuildRequires:  pkgconfig
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-BuildRequires:  systemd-units
+BuildRequires:  systemd
+# For pkgconfig
+BuildRequires:  systemd-devel
 
 # For tests
 BuildRequires:  iproute
@@ -62,6 +55,7 @@ BuildRequires:  python3-pyserial
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-requests
 BuildRequires:  python3-six
+BuildRequires:  python3-unittest2
 
 Requires:       e2fsprogs
 Requires:       iproute
@@ -79,10 +73,10 @@ Requires:       python3-PyYAML
 Requires:       python3-requests
 Requires:       python3-six
 Requires:       shadow-utils
+Requires:       util-linux
 Requires:       /usr/bin/run-parts
-Requires(post):   systemd-units
-Requires(preun):  systemd-units
-Requires(postun): systemd-units
+%{?systemd_requires}
+
 
 %description
 Cloud-init is a set of init scripts for cloud instances.  Cloud instances
@@ -91,7 +85,7 @@ ssh keys and to let the user run various scripts.
 
 
 %prep
-%autosetup -p1 -n %{name}-%{version}-bzr1137
+%autosetup -p1 -n %{name}-%{version}-bzr1245
 
 # Change shebangs
 sed -i -e 's|#!/usr/bin/env python|#!/usr/bin/env python3|' \
@@ -106,7 +100,7 @@ cp -p %{SOURCE2} README.fedora
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT  --init-system=systemd
+%{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT --init-system=systemd
 
 # Don't ship the tests
 rm -r $RPM_BUILD_ROOT%{python3_sitelib}/tests
@@ -115,7 +109,7 @@ mkdir -p $RPM_BUILD_ROOT/var/lib/cloud
 
 # /run/cloud-init needs a tmpfiles.d entry
 mkdir -p $RPM_BUILD_ROOT/run/cloud-init
-mkdir -p         $RPM_BUILD_ROOT/%{_tmpfilesdir}
+mkdir -p $RPM_BUILD_ROOT/%{_tmpfilesdir}
 cp -p %{SOURCE3} $RPM_BUILD_ROOT/%{_tmpfilesdir}/%{name}.conf
 
 # We supply our own config file since our software differs from Ubuntu's.
@@ -124,12 +118,10 @@ cp -p %{SOURCE1} $RPM_BUILD_ROOT/%{_sysconfdir}/cloud/cloud.cfg
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d
 cp -p tools/21-cloudinit.conf $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d/21-cloudinit.conf
 
-# Install the systemd bits
-mkdir -p         $RPM_BUILD_ROOT/%{_unitdir}
-cp -p systemd/*  $RPM_BUILD_ROOT/%{_unitdir}
 
 %check
 nosetests-%{python3_version}
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -138,10 +130,12 @@ rm -rf $RPM_BUILD_ROOT
 %post
 # These services are now enabled by the cloud image's kickstart.
 # They should probably be done with a preset instead.
-%systemd_post cloud-config.service cloud-final.service cloud-init.service cloud-init-local.service
+%systemd_post cloud-config.service cloud-config.target cloud-final.service cloud-init.service cloud-init.target cloud-init-local.service
+
 
 %preun
-%systemd_preun cloud-config.service cloud-final.service cloud-init.service cloud-init-local.service
+%systemd_preun cloud-config.service cloud-config.target cloud-final.service cloud-init.service cloud-init.target cloud-init-local.service
+
 
 %postun
 %systemd_postun
@@ -159,22 +153,26 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/cloud/templates/*
 /lib/udev/rules.d/66-azure-ephemeral.rules
 %{_unitdir}/cloud-config.service
-%{_unitdir}/cloud-config.target
 %{_unitdir}/cloud-final.service
-%{_unitdir}/cloud-init-local.service
 %{_unitdir}/cloud-init.service
+%{_unitdir}/cloud-init-local.service
+%{_unitdir}/cloud-config.target
+%{_unitdir}/cloud-init.target
+/usr/lib/systemd/system-generators/cloud-init-generator
 %{_tmpfilesdir}/%{name}.conf
 %{python3_sitelib}/*
 %{_libexecdir}/%{name}
 %{_bindir}/cloud-init*
 %dir /run/cloud-init
 %dir /var/lib/cloud
-
 %dir %{_sysconfdir}/rsyslog.d
 %config(noreplace) %{_sysconfdir}/rsyslog.d/21-cloudinit.conf
 
 
 %changelog
+* Wed Jul  6 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.6-20160622bzr1245
+- Updated to bzr snapshot 1245
+
 * Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.6-8.20150813bzr1137
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 

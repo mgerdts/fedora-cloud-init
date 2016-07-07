@@ -1,0 +1,38 @@
+Index: cloud-init-0.7.6-bzr1245/cloudinit/distros/__init__.py
+===================================================================
+--- cloud-init-0.7.6-bzr1245.orig/cloudinit/distros/__init__.py
++++ cloud-init-0.7.6-bzr1245/cloudinit/distros/__init__.py
+@@ -376,7 +376,7 @@ class Distro(object):
+                 # that can go right through to the command.
+                 kwargs['groups'] = ",".join(groups)
+             else:
+-                groups = groups.split(",")
++                groups = [group.strip() for group in groups.split(",")]
+ 
+             primary_group = kwargs.get('primary_group')
+             if primary_group:
+@@ -673,7 +673,7 @@ def _get_arch_package_mirror_info(packag
+ # of cloud-init
+ def _normalize_groups(grp_cfg):
+     if isinstance(grp_cfg, six.string_types):
+-        grp_cfg = grp_cfg.strip().split(",")
++        grp_cfg = [grp.strip() for grp in grp_cfg.strip().split(",")]
+     if isinstance(grp_cfg, list):
+         c_grp_cfg = {}
+         for i in grp_cfg:
+@@ -691,11 +691,14 @@ def _normalize_groups(grp_cfg):
+                         if isinstance(v, list):
+                             c_grp_cfg[k].extend(v)
+                         elif isinstance(v, six.string_types):
+-                            c_grp_cfg[k].append(v)
++                            c_grp_cfg[k].append(v.strip())
+                         else:
+                             raise TypeError("Bad group member type %s" %
+                                             type_utils.obj_name(v))
+             elif isinstance(i, six.string_types):
++                # Common to have leading whitespace in string lists,
++                # but not all useradd tools will support it.
++                i = i.strip()
+                 if i not in c_grp_cfg:
+                     c_grp_cfg[i] = []
+             else:

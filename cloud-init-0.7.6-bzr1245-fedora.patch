@@ -1,0 +1,12 @@
+Index: cloud-init-0.7.6-bzr1245/setup.py
+===================================================================
+--- cloud-init-0.7.6-bzr1245.orig/setup.py
++++ cloud-init-0.7.6-bzr1245/setup.py
+@@ -207,7 +207,6 @@ setuptools.setup(
+     scripts=['tools/cloud-init-per'],
+     license='GPLv3',
+     data_files=data_files,
+-    install_requires=requirements,
+     cmdclass=cmdclass,
+     entry_points={
+         'console_scripts': [
