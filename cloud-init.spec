@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.6
-Release:        9.20160622bzr1245%{?dist}
+Release:        10.20160622bzr1245%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
@@ -170,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Jul 19 2016 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.7.6-10.20160622bzr1245
+- https://fedoraproject.org/wiki/Changes/Automatic_Provides_for_Python_RPM_Packages
+
 * Wed Jul  6 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.6-20160622bzr1245
 - Updated to bzr snapshot 1245
 
