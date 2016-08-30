@@ -1,14 +1,14 @@
 Name:           cloud-init
-Version:        0.7.6
-Release:        10.20160622bzr1245%{?dist}
+Version:        0.7.7
+Release:        1%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
-#Source0:        https://launchpad.net/cloud-init/trunk/%{version}/+download/%{name}-%{version}.tar.gz
+Source0:        https://launchpad.net/cloud-init/trunk/%{version}/+download/%{name}-%{version}.tar.gz
 # bzr export -r 1245 cloud-init-0.7.6-bzr1245.tar.gz lp:cloud-init
-Source0:        cloud-init-0.7.6-bzr1245.tar.gz
+#Source0:        cloud-init-0.7.6-bzr1245.tar.gz
 Source1:        cloud-init-fedora.cfg
 Source2:        cloud-init-README.fedora
 Source3:        cloud-init-tmpfiles.conf
@@ -85,7 +85,7 @@ ssh keys and to let the user run various scripts.
 
 
 %prep
-%autosetup -p1 -n %{name}-%{version}-bzr1245
+%autosetup -p1
 
 # Change shebangs
 sed -i -e 's|#!/usr/bin/env python|#!/usr/bin/env python3|' \
@@ -170,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Aug 30 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.7-1
+- Updated to 0.7.7
+
 * Tue Jul 19 2016 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.7.6-10.20160622bzr1245
 - https://fedoraproject.org/wiki/Changes/Automatic_Provides_for_Python_RPM_Packages
 
