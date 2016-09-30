@@ -40,6 +40,11 @@ Patch8:         cloud-init-0.7.8-apt-dns-test.patch
 # https://git.launchpad.net/cloud-init/commit/?id=1b71b47
 Patch9:         cloud-init-0.7.8-before-nm.patch
 
+# Backport DigitalOcean network configuration support
+# https://git.launchpad.net/cloud-init/commit/?id=9f83bb8
+# https://bugzilla.redhat.com/show_bug.cgi?id=1380489
+Patch10:        cloud-init-0.7.8-digitalocean-net.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig
@@ -183,6 +188,7 @@ rm -rf $RPM_BUILD_ROOT
 - Updated to 0.7.8
 - Dropped run-parts dependency [RH:1355917]
 - Ordered cloud-init-local before NetworkManager
+- Backported DigitalOcean network configuration support [RH:1380489]
 
 * Tue Aug 30 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.7-1
 - Updated to 0.7.7

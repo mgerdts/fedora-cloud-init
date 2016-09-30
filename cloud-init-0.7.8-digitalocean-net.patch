@@ -1,0 +1,786 @@
+commit 9f83bb8e80806d3dd79ba426474dc3c696e19a41
+Author: Ben Howard <bh@digitalocean.com>
+Date:   Fri Aug 19 16:28:26 2016 -0600
+
+    DigitalOcean: use meta-data for network configruation
+    
+    On DigitalOcean, Network information is provided via Meta-data.
+    It changes the datasource to be a local datasource, meaning it
+    will run before fallback networking is configured.
+    
+    The advantage of that is that before networking is configured it
+    can bring up a network device with ipv4 link-local and hit the
+    metadata service that lives at 169.254.169.254 to find its networking
+    configuration.  It then takes down the link local address and lets
+    cloud-init configure networking.
+    
+    The configuring of a network device to go looking for a metadata
+    service is gated by a check of data in the smbios.  This guarantees
+    that the code will not run on another system.
+
+Index: cloud-init-0.7.8/cloudinit/sources/DataSourceDigitalOcean.py
+===================================================================
+--- cloud-init-0.7.8.orig/cloudinit/sources/DataSourceDigitalOcean.py
++++ cloud-init-0.7.8/cloudinit/sources/DataSourceDigitalOcean.py
+@@ -18,13 +18,12 @@
+ # DigitalOcean Droplet API:
+ # https://developers.digitalocean.com/documentation/metadata/
+ 
+-import json
+-
+ from cloudinit import log as logging
+ from cloudinit import sources
+-from cloudinit import url_helper
+ from cloudinit import util
+ 
++import cloudinit.sources.helpers.digitalocean as do_helper
++
+ LOG = logging.getLogger(__name__)
+ 
+ BUILTIN_DS_CONFIG = {
+@@ -36,11 +35,13 @@ BUILTIN_DS_CONFIG = {
+ MD_RETRIES = 30
+ MD_TIMEOUT = 2
+ MD_WAIT_RETRY = 2
++MD_USE_IPV4LL = True
+ 
+ 
+ class DataSourceDigitalOcean(sources.DataSource):
+     def __init__(self, sys_cfg, distro, paths):
+         sources.DataSource.__init__(self, sys_cfg, distro, paths)
++        self.distro = distro
+         self.metadata = dict()
+         self.ds_cfg = util.mergemanydict([
+             util.get_cfg_by_path(sys_cfg, ["datasource", "DigitalOcean"], {}),
+@@ -48,80 +49,72 @@ class DataSourceDigitalOcean(sources.Dat
+         self.metadata_address = self.ds_cfg['metadata_url']
+         self.retries = self.ds_cfg.get('retries', MD_RETRIES)
+         self.timeout = self.ds_cfg.get('timeout', MD_TIMEOUT)
++        self.use_ip4LL = self.ds_cfg.get('use_ip4LL', MD_USE_IPV4LL)
+         self.wait_retry = self.ds_cfg.get('wait_retry', MD_WAIT_RETRY)
++        self._network_config = None
+ 
+     def _get_sysinfo(self):
+-        # DigitalOcean embeds vendor ID and instance/droplet_id in the
+-        # SMBIOS information
+-
+-        LOG.debug("checking if instance is a DigitalOcean droplet")
++        return do_helper.read_sysinfo()
+ 
+-        # Detect if we are on DigitalOcean and return the Droplet's ID
+-        vendor_name = util.read_dmi_data("system-manufacturer")
+-        if vendor_name != "DigitalOcean":
+-            return (False, None)
+-
+-        LOG.info("running on DigitalOcean")
+-
+-        droplet_id = util.read_dmi_data("system-serial-number")
+-        if droplet_id:
+-            LOG.debug(("system identified via SMBIOS as DigitalOcean Droplet"
+-                       "{}").format(droplet_id))
+-        else:
+-            LOG.critical(("system identified via SMBIOS as a DigitalOcean "
+-                          "Droplet, but did not provide an ID. Please file a "
+-                          "support ticket at: "
+-                          "https://cloud.digitalocean.com/support/tickets/"
+-                          "new"))
+-
+-        return (True, droplet_id)
+-
+-    def get_data(self, apply_filter=False):
++    def get_data(self):
+         (is_do, droplet_id) = self._get_sysinfo()
+ 
+         # only proceed if we know we are on DigitalOcean
+         if not is_do:
+             return False
+ 
+-        LOG.debug("reading metadata from {}".format(self.metadata_address))
+-        response = url_helper.readurl(self.metadata_address,
+-                                      timeout=self.timeout,
+-                                      sec_between=self.wait_retry,
+-                                      retries=self.retries)
+-
+-        contents = util.decode_binary(response.contents)
+-        decoded = json.loads(contents)
+-
+-        self.metadata = decoded
+-        self.metadata['instance-id'] = decoded.get('droplet_id', droplet_id)
+-        self.metadata['local-hostname'] = decoded.get('hostname', droplet_id)
+-        self.vendordata_raw = decoded.get("vendor_data", None)
+-        self.userdata_raw = decoded.get("user_data", None)
+-        return True
++        LOG.info("Running on digital ocean. droplet_id=%s" % droplet_id)
+ 
+-    def get_public_ssh_keys(self):
+-        public_keys = self.metadata.get('public_keys', [])
+-        if isinstance(public_keys, list):
+-            return public_keys
+-        else:
+-            return [public_keys]
++        ipv4LL_nic = None
++        if self.use_ip4LL:
++            ipv4LL_nic = do_helper.assign_ipv4_link_local()
++
++        md = do_helper.read_metadata(
++            self.metadata_address, timeout=self.timeout,
++            sec_between=self.wait_retry, retries=self.retries)
++
++        self.metadata_full = md
++        self.metadata['instance-id'] = md.get('droplet_id', droplet_id)
++        self.metadata['local-hostname'] = md.get('hostname', droplet_id)
++        self.metadata['interfaces'] = md.get('interfaces')
++        self.metadata['public-keys'] = md.get('public_keys')
++        self.metadata['availability_zone'] = md.get('region', 'default')
++        self.vendordata_raw = md.get("vendor_data", None)
++        self.userdata_raw = md.get("user_data", None)
+ 
+-    @property
+-    def availability_zone(self):
+-        return self.metadata.get('region', 'default')
++        if ipv4LL_nic:
++            do_helper.del_ipv4_link_local(ipv4LL_nic)
+ 
+-    @property
+-    def launch_index(self):
+-        return None
++        return True
+ 
+     def check_instance_id(self, sys_cfg):
+         return sources.instance_id_matches_system_uuid(
+             self.get_instance_id(), 'system-serial-number')
+ 
++    @property
++    def network_config(self):
++        """Configure the networking. This needs to be done each boot, since
++           the IP information may have changed due to snapshot and/or
++           migration.
++        """
++
++        if self._network_config:
++            return self._network_config
++
++        interfaces = self.metadata.get('interfaces')
++        LOG.debug(interfaces)
++        if not interfaces:
++            raise Exception("Unable to get meta-data from server....")
++
++        nameservers = self.metadata_full['dns']['nameservers']
++        self._network_config = do_helper.convert_network_configuration(
++            interfaces, nameservers)
++        return self._network_config
++
+ 
+ # Used to match classes to dependencies
+ datasources = [
+-    (DataSourceDigitalOcean, (sources.DEP_FILESYSTEM, sources.DEP_NETWORK)),
++    (DataSourceDigitalOcean, (sources.DEP_FILESYSTEM, )),
+ ]
+ 
+ 
+Index: cloud-init-0.7.8/cloudinit/sources/helpers/digitalocean.py
+===================================================================
+--- /dev/null
++++ cloud-init-0.7.8/cloudinit/sources/helpers/digitalocean.py
+@@ -0,0 +1,218 @@
++# vi: ts=4 expandtab
++#
++#    Author: Ben Howard  <bh@digitalocean.com>
++
++#    This program is free software: you can redistribute it and/or modify
++#    it under the terms of the GNU General Public License version 3, as
++#    published by the Free Software Foundation.
++#
++#    This program is distributed in the hope that it will be useful,
++#    but WITHOUT ANY WARRANTY; without even the implied warranty of
++#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++#    GNU General Public License for more details.
++#
++#    You should have received a copy of the GNU General Public License
++#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++
++import json
++import random
++
++from cloudinit import log as logging
++from cloudinit import net as cloudnet
++from cloudinit import url_helper
++from cloudinit import util
++
++NIC_MAP = {'public': 'eth0', 'private': 'eth1'}
++
++LOG = logging.getLogger(__name__)
++
++
++def assign_ipv4_link_local(nic=None):
++    """Bring up NIC using an address using link-local (ip4LL) IPs. On
++       DigitalOcean, the link-local domain is per-droplet routed, so there
++       is no risk of collisions. However, to be more safe, the ip4LL
++       address is random.
++    """
++
++    if not nic:
++        for cdev in sorted(cloudnet.get_devicelist()):
++            if cloudnet.is_physical(cdev):
++                nic = cdev
++                LOG.debug("assigned nic '%s' for link-local discovery", nic)
++                break
++
++    if not nic:
++        raise RuntimeError("unable to find interfaces to access the"
++                           "meta-data server. This droplet is broken.")
++
++    addr = "169.254.{0}.{1}/16".format(random.randint(1, 168),
++                                       random.randint(0, 255))
++
++    ip_addr_cmd = ['ip', 'addr', 'add', addr, 'dev', nic]
++    ip_link_cmd = ['ip', 'link', 'set', 'dev', nic, 'up']
++
++    if not util.which('ip'):
++        raise RuntimeError("No 'ip' command available to configure ip4LL "
++                           "address")
++
++    try:
++        (result, _err) = util.subp(ip_addr_cmd)
++        LOG.debug("assigned ip4LL address '%s' to '%s'", addr, nic)
++
++        (result, _err) = util.subp(ip_link_cmd)
++        LOG.debug("brought device '%s' up", nic)
++    except Exception:
++        util.logexc(LOG, "ip4LL address assignment of '%s' to '%s' failed."
++                         " Droplet networking will be broken", addr, nic)
++        raise
++
++    return nic
++
++
++def del_ipv4_link_local(nic=None):
++    """Remove the ip4LL address. While this is not necessary, the ip4LL
++       address is extraneous and confusing to users.
++    """
++    if not nic:
++        LOG.debug("no link_local address interface defined, skipping link "
++                  "local address cleanup")
++        return
++
++    LOG.debug("cleaning up ipv4LL address")
++
++    ip_addr_cmd = ['ip', 'addr', 'flush', 'dev', nic]
++
++    try:
++        (result, _err) = util.subp(ip_addr_cmd)
++        LOG.debug("removed ip4LL addresses from %s", nic)
++
++    except Exception as e:
++        util.logexc(LOG, "failed to remove ip4LL address from '%s'.", nic, e)
++
++
++def convert_network_configuration(config, dns_servers):
++    """Convert the DigitalOcean Network description into Cloud-init's netconfig
++       format.
++
++       Example JSON:
++        {'public': [
++              {'mac': '04:01:58:27:7f:01',
++               'ipv4': {'gateway': '45.55.32.1',
++                        'netmask': '255.255.224.0',
++                        'ip_address': '45.55.50.93'},
++               'anchor_ipv4': {
++                        'gateway': '10.17.0.1',
++                        'netmask': '255.255.0.0',
++                        'ip_address': '10.17.0.9'},
++               'type': 'public',
++               'ipv6': {'gateway': '....',
++                        'ip_address': '....',
++                        'cidr': 64}}
++           ],
++          'private': [
++              {'mac': '04:01:58:27:7f:02',
++               'ipv4': {'gateway': '10.132.0.1',
++                        'netmask': '255.255.0.0',
++                        'ip_address': '10.132.75.35'},
++               'type': 'private'}
++           ]
++        }
++    """
++
++    def _get_subnet_part(pcfg, nameservers=None):
++        subpart = {'type': 'static',
++                   'control': 'auto',
++                   'address': pcfg.get('ip_address'),
++                   'gateway': pcfg.get('gateway')}
++
++        if nameservers:
++            subpart['dns_nameservers'] = nameservers
++
++        if ":" in pcfg.get('ip_address'):
++            subpart['address'] = "{0}/{1}".format(pcfg.get('ip_address'),
++                                                  pcfg.get('cidr'))
++        else:
++            subpart['netmask'] = pcfg.get('netmask')
++
++        return subpart
++
++    all_nics = []
++    for k in ('public', 'private'):
++        if k in config:
++            all_nics.extend(config[k])
++
++    macs_to_nics = cloudnet.get_interfaces_by_mac()
++    nic_configs = []
++
++    for nic in all_nics:
++
++        mac_address = nic.get('mac')
++        sysfs_name = macs_to_nics.get(mac_address)
++        nic_type = nic.get('type', 'unknown')
++        # Note: the entry 'public' above contains a list, but
++        # the list will only ever have one nic inside it per digital ocean.
++        # If it ever had more than one nic, then this code would
++        # assign all 'public' the same name.
++        if_name = NIC_MAP.get(nic_type, sysfs_name)
++
++        LOG.debug("mapped %s interface to %s, assigning name of %s",
++                  mac_address, sysfs_name, if_name)
++
++        ncfg = {'type': 'physical',
++                'mac_address': mac_address,
++                'name': if_name}
++
++        subnets = []
++        for netdef in ('ipv4', 'ipv6', 'anchor_ipv4', 'anchor_ipv6'):
++            raw_subnet = nic.get(netdef, None)
++            if not raw_subnet:
++                continue
++
++            sub_part = _get_subnet_part(raw_subnet)
++            if nic_type == 'public' and 'anchor' not in netdef:
++                # add DNS resolvers to the public interfaces only
++                sub_part = _get_subnet_part(raw_subnet, dns_servers)
++            else:
++                # remove the gateway any non-public interfaces
++                if 'gateway' in sub_part:
++                    del sub_part['gateway']
++
++            subnets.append(sub_part)
++
++        ncfg['subnets'] = subnets
++        nic_configs.append(ncfg)
++        LOG.debug("nic '%s' configuration: %s", if_name, ncfg)
++
++    return {'version': 1, 'config': nic_configs}
++
++
++def read_metadata(url, timeout=2, sec_between=2, retries=30):
++    response = url_helper.readurl(url, timeout=timeout,
++                                  sec_between=sec_between, retries=retries)
++    if not response.ok():
++        raise RuntimeError("unable to read metadata at %s" % url)
++    return json.loads(response.contents.decode())
++
++
++def read_sysinfo():
++    # DigitalOcean embeds vendor ID and instance/droplet_id in the
++    # SMBIOS information
++
++    # Detect if we are on DigitalOcean and return the Droplet's ID
++    vendor_name = util.read_dmi_data("system-manufacturer")
++    if vendor_name != "DigitalOcean":
++        return (False, None)
++
++    droplet_id = util.read_dmi_data("system-serial-number")
++    if droplet_id:
++        LOG.debug("system identified via SMBIOS as DigitalOcean Droplet: %s",
++                  droplet_id)
++    else:
++        msg = ("system identified via SMBIOS as a DigitalOcean "
++               "Droplet, but did not provide an ID. Please file a "
++               "support ticket at: "
++               "https://cloud.digitalocean.com/support/tickets/new")
++        LOG.critical(msg)
++        raise RuntimeError(msg)
++
++    return (True, droplet_id)
+Index: cloud-init-0.7.8/tests/unittests/test_datasource/test_digitalocean.py
+===================================================================
+--- cloud-init-0.7.8.orig/tests/unittests/test_datasource/test_digitalocean.py
++++ cloud-init-0.7.8/tests/unittests/test_datasource/test_digitalocean.py
+@@ -20,25 +20,123 @@ import json
+ from cloudinit import helpers
+ from cloudinit import settings
+ from cloudinit.sources import DataSourceDigitalOcean
++from cloudinit.sources.helpers import digitalocean
+ 
+-from .. import helpers as test_helpers
+-from ..helpers import HttprettyTestCase
+-
+-httpretty = test_helpers.import_httpretty()
++from ..helpers import mock, TestCase
+ 
+ DO_MULTIPLE_KEYS = ["ssh-rsa AAAAB3NzaC1yc2EAAAA... test1@do.co",
+                     "ssh-rsa AAAAB3NzaC1yc2EAAAA... test2@do.co"]
+ DO_SINGLE_KEY = "ssh-rsa AAAAB3NzaC1yc2EAAAA... test@do.co"
+ 
+-DO_META = {
+-    'user_data': 'user_data_here',
+-    'vendor_data': 'vendor_data_here',
+-    'public_keys': DO_SINGLE_KEY,
+-    'region': 'nyc3',
+-    'id': '2000000',
+-    'hostname': 'cloudinit-test',
++# the following JSON was taken from droplet (that's why its a string)
++DO_META = json.loads("""
++{
++  "droplet_id": "22532410",
++  "hostname": "utl-96268",
++  "vendor_data": "vendordata goes here",
++  "user_data": "userdata goes here",
++  "public_keys": "",
++  "auth_key": "authorization_key",
++  "region": "nyc3",
++  "interfaces": {
++    "private": [
++      {
++        "ipv4": {
++          "ip_address": "10.132.6.205",
++          "netmask": "255.255.0.0",
++          "gateway": "10.132.0.1"
++        },
++        "mac": "04:01:57:d1:9e:02",
++        "type": "private"
++      }
++    ],
++    "public": [
++      {
++        "ipv4": {
++          "ip_address": "192.0.0.20",
++          "netmask": "255.255.255.0",
++          "gateway": "104.236.0.1"
++        },
++        "ipv6": {
++          "ip_address": "2604:A880:0800:0000:1000:0000:0000:0000",
++          "cidr": 64,
++          "gateway": "2604:A880:0800:0000:0000:0000:0000:0001"
++        },
++        "anchor_ipv4": {
++          "ip_address": "10.0.0.5",
++          "netmask": "255.255.0.0",
++          "gateway": "10.0.0.1"
++        },
++        "mac": "04:01:57:d1:9e:01",
++        "type": "public"
++      }
++    ]
++  },
++  "floating_ip": {
++    "ipv4": {
++      "active": false
++    }
++  },
++  "dns": {
++    "nameservers": [
++      "2001:4860:4860::8844",
++      "2001:4860:4860::8888",
++      "8.8.8.8"
++    ]
++  }
++}
++""")
++
++# This has no private interface
++DO_META_2 = {
++    "droplet_id": 27223699,
++    "hostname": "smtest1",
++    "vendor_data": "\n".join([
++        ('"Content-Type: multipart/mixed; '
++         'boundary=\"===============8645434374073493512==\"'),
++        'MIME-Version: 1.0',
++        '',
++        '--===============8645434374073493512==',
++        'MIME-Version: 1.0'
++        'Content-Type: text/cloud-config; charset="us-ascii"'
++        'Content-Transfer-Encoding: 7bit'
++        'Content-Disposition: attachment; filename="cloud-config"'
++        '',
++        '#cloud-config',
++        'disable_root: false',
++        'manage_etc_hosts: true',
++        '',
++        '',
++        '--===============8645434374073493512=='
++    ]),
++    "public_keys": [
++        "ssh-rsa AAAAB3NzaN...N3NtHw== smoser@brickies"
++    ],
++    "auth_key": "88888888888888888888888888888888",
++    "region": "nyc3",
++    "interfaces": {
++        "public": [{
++            "ipv4": {
++                "ip_address": "45.55.249.133",
++                "netmask": "255.255.192.0",
++                "gateway": "45.55.192.1"
++            },
++            "anchor_ipv4": {
++                "ip_address": "10.17.0.5",
++                "netmask": "255.255.0.0",
++                "gateway": "10.17.0.1"
++            },
++            "mac": "ae:cc:08:7c:88:00",
++            "type": "public"
++        }]
++    },
++    "floating_ip": {"ipv4": {"active": True, "ip_address": "138.197.59.92"}},
++    "dns": {"nameservers": ["8.8.8.8", "8.8.4.4"]},
++    "tags": None,
+ }
+ 
++DO_META['public_keys'] = DO_SINGLE_KEY
++
+ MD_URL = 'http://169.254.169.254/metadata/v1.json'
+ 
+ 
+@@ -46,69 +144,189 @@ def _mock_dmi():
+     return (True, DO_META.get('id'))
+ 
+ 
+-def _request_callback(method, uri, headers):
+-    return (200, headers, json.dumps(DO_META))
+-
+-
+-class TestDataSourceDigitalOcean(HttprettyTestCase):
++class TestDataSourceDigitalOcean(TestCase):
+     """
+     Test reading the meta-data
+     """
+ 
+-    def setUp(self):
+-        self.ds = DataSourceDigitalOcean.DataSourceDigitalOcean(
+-            settings.CFG_BUILTIN, None,
+-            helpers.Paths({}))
+-        self.ds._get_sysinfo = _mock_dmi
+-        super(TestDataSourceDigitalOcean, self).setUp()
+-
+-    @httpretty.activate
+-    def test_connection(self):
+-        httpretty.register_uri(
+-            httpretty.GET, MD_URL,
+-            body=json.dumps(DO_META))
+-
+-        success = self.ds.get_data()
+-        self.assertTrue(success)
+-
+-    @httpretty.activate
+-    def test_metadata(self):
+-        httpretty.register_uri(
+-            httpretty.GET, MD_URL,
+-            body=_request_callback)
+-        self.ds.get_data()
+-
+-        self.assertEqual(DO_META.get('user_data'),
+-                         self.ds.get_userdata_raw())
+-
+-        self.assertEqual(DO_META.get('vendor_data'),
+-                         self.ds.get_vendordata_raw())
+-
+-        self.assertEqual(DO_META.get('region'),
+-                         self.ds.availability_zone)
+-
+-        self.assertEqual(DO_META.get('id'),
+-                         self.ds.get_instance_id())
+-
+-        self.assertEqual(DO_META.get('hostname'),
+-                         self.ds.get_hostname())
++    def get_ds(self, get_sysinfo=_mock_dmi):
++        ds = DataSourceDigitalOcean.DataSourceDigitalOcean(
++            settings.CFG_BUILTIN, None, helpers.Paths({}))
++        ds.use_ip4LL = False
++        if get_sysinfo is not None:
++            ds._get_sysinfo = get_sysinfo
++        return ds
++
++    @mock.patch('cloudinit.sources.helpers.digitalocean.read_sysinfo')
++    def test_returns_false_not_on_docean(self, m_read_sysinfo):
++        m_read_sysinfo.return_value = (False, None)
++        ds = self.get_ds(get_sysinfo=None)
++        self.assertEqual(False, ds.get_data())
++        m_read_sysinfo.assert_called()
++
++    @mock.patch('cloudinit.sources.helpers.digitalocean.read_metadata')
++    def test_metadata(self, mock_readmd):
++        mock_readmd.return_value = DO_META.copy()
++
++        ds = self.get_ds()
++        ret = ds.get_data()
++        self.assertTrue(ret)
++
++        mock_readmd.assert_called()
++
++        self.assertEqual(DO_META.get('user_data'), ds.get_userdata_raw())
++        self.assertEqual(DO_META.get('vendor_data'), ds.get_vendordata_raw())
++        self.assertEqual(DO_META.get('region'), ds.availability_zone)
++        self.assertEqual(DO_META.get('droplet_id'), ds.get_instance_id())
++        self.assertEqual(DO_META.get('hostname'), ds.get_hostname())
+ 
+         # Single key
+         self.assertEqual([DO_META.get('public_keys')],
+-                         self.ds.get_public_ssh_keys())
++                         ds.get_public_ssh_keys())
++
++        self.assertIsInstance(ds.get_public_ssh_keys(), list)
+ 
+-        self.assertIsInstance(self.ds.get_public_ssh_keys(), list)
++    @mock.patch('cloudinit.sources.helpers.digitalocean.read_metadata')
++    def test_multiple_ssh_keys(self, mock_readmd):
++        metadata = DO_META.copy()
++        metadata['public_keys'] = DO_MULTIPLE_KEYS
++        mock_readmd.return_value = metadata.copy()
+ 
+-    @httpretty.activate
+-    def test_multiple_ssh_keys(self):
+-        DO_META['public_keys'] = DO_MULTIPLE_KEYS
+-        httpretty.register_uri(
+-            httpretty.GET, MD_URL,
+-            body=_request_callback)
+-        self.ds.get_data()
++        ds = self.get_ds()
++        ret = ds.get_data()
++        self.assertTrue(ret)
++
++        mock_readmd.assert_called()
+ 
+         # Multiple keys
+-        self.assertEqual(DO_META.get('public_keys'),
+-                         self.ds.get_public_ssh_keys())
++        self.assertEqual(metadata['public_keys'], ds.get_public_ssh_keys())
++        self.assertIsInstance(ds.get_public_ssh_keys(), list)
++
++
++class TestNetworkConvert(TestCase):
+ 
+-        self.assertIsInstance(self.ds.get_public_ssh_keys(), list)
++    def _get_networking(self):
++        netcfg = digitalocean.convert_network_configuration(
++            DO_META['interfaces'], DO_META['dns']['nameservers'])
++        self.assertIn('config', netcfg)
++        return netcfg
++
++    def test_networking_defined(self):
++        netcfg = self._get_networking()
++        self.assertIsNotNone(netcfg)
++
++        for nic_def in netcfg.get('config'):
++            print(json.dumps(nic_def, indent=3))
++            n_type = nic_def.get('type')
++            n_subnets = nic_def.get('type')
++            n_name = nic_def.get('name')
++            n_mac = nic_def.get('mac_address')
++
++            self.assertIsNotNone(n_type)
++            self.assertIsNotNone(n_subnets)
++            self.assertIsNotNone(n_name)
++            self.assertIsNotNone(n_mac)
++
++    def _get_nic_definition(self, int_type, expected_name):
++        """helper function to return if_type (i.e. public) and the expected
++           name used by cloud-init (i.e eth0)"""
++        netcfg = self._get_networking()
++        meta_def = (DO_META.get('interfaces')).get(int_type)[0]
++
++        self.assertEqual(int_type, meta_def.get('type'))
++
++        for nic_def in netcfg.get('config'):
++            print(nic_def)
++            if nic_def.get('name') == expected_name:
++                return nic_def, meta_def
++
++    def _get_match_subn(self, subnets, ip_addr):
++        """get the matching subnet definition based on ip address"""
++        for subn in subnets:
++            address = subn.get('address')
++            self.assertIsNotNone(address)
++
++            # equals won't work because of ipv6 addressing being in
++            # cidr notation, i.e fe00::1/64
++            if ip_addr in address:
++                print(json.dumps(subn, indent=3))
++                return subn
++
++    def test_public_interface_defined(self):
++        """test that the public interface is defined as eth0"""
++        (nic_def, meta_def) = self._get_nic_definition('public', 'eth0')
++        self.assertEqual('eth0', nic_def.get('name'))
++        self.assertEqual(meta_def.get('mac'), nic_def.get('mac_address'))
++        self.assertEqual('physical', nic_def.get('type'))
++
++    def test_private_interface_defined(self):
++        """test that the private interface is defined as eth1"""
++        (nic_def, meta_def) = self._get_nic_definition('private', 'eth1')
++        self.assertEqual('eth1', nic_def.get('name'))
++        self.assertEqual(meta_def.get('mac'), nic_def.get('mac_address'))
++        self.assertEqual('physical', nic_def.get('type'))
++
++    def _check_dns_nameservers(self, subn_def):
++        self.assertIn('dns_nameservers', subn_def)
++        expected_nameservers = DO_META['dns']['nameservers']
++        nic_nameservers = subn_def.get('dns_nameservers')
++        self.assertEqual(expected_nameservers, nic_nameservers)
++
++    def test_public_interface_ipv6(self):
++        """test public ipv6 addressing"""
++        (nic_def, meta_def) = self._get_nic_definition('public', 'eth0')
++        ipv6_def = meta_def.get('ipv6')
++        self.assertIsNotNone(ipv6_def)
++
++        subn_def = self._get_match_subn(nic_def.get('subnets'),
++                                        ipv6_def.get('ip_address'))
++
++        cidr_notated_address = "{0}/{1}".format(ipv6_def.get('ip_address'),
++                                                ipv6_def.get('cidr'))
++
++        self.assertEqual(cidr_notated_address, subn_def.get('address'))
++        self.assertEqual(ipv6_def.get('gateway'), subn_def.get('gateway'))
++        self._check_dns_nameservers(subn_def)
++
++    def test_public_interface_ipv4(self):
++        """test public ipv4 addressing"""
++        (nic_def, meta_def) = self._get_nic_definition('public', 'eth0')
++        ipv4_def = meta_def.get('ipv4')
++        self.assertIsNotNone(ipv4_def)
++
++        subn_def = self._get_match_subn(nic_def.get('subnets'),
++                                        ipv4_def.get('ip_address'))
++
++        self.assertEqual(ipv4_def.get('netmask'), subn_def.get('netmask'))
++        self.assertEqual(ipv4_def.get('gateway'), subn_def.get('gateway'))
++        self._check_dns_nameservers(subn_def)
++
++    def test_public_interface_anchor_ipv4(self):
++        """test public ipv4 addressing"""
++        (nic_def, meta_def) = self._get_nic_definition('public', 'eth0')
++        ipv4_def = meta_def.get('anchor_ipv4')
++        self.assertIsNotNone(ipv4_def)
++
++        subn_def = self._get_match_subn(nic_def.get('subnets'),
++                                        ipv4_def.get('ip_address'))
++
++        self.assertEqual(ipv4_def.get('netmask'), subn_def.get('netmask'))
++        self.assertNotIn('gateway', subn_def)
++
++    def test_convert_without_private(self):
++        netcfg = digitalocean.convert_network_configuration(
++            DO_META_2['interfaces'], DO_META_2['dns']['nameservers'])
++
++        byname = {}
++        for i in netcfg['config']:
++            if 'name' in i:
++                if i['name'] in byname:
++                    raise ValueError("name '%s' in config twice: %s" %
++                                     (i['name'], netcfg))
++                byname[i['name']] = i
++        self.assertTrue('eth0' in byname)
++        self.assertTrue('subnets' in byname['eth0'])
++        eth0 = byname['eth0']
++        self.assertEqual(
++            sorted(['45.55.249.133', '10.17.0.5']),
++            sorted([i['address'] for i in eth0['subnets']]))
