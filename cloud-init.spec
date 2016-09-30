@@ -78,7 +78,7 @@ Requires:       python3-requests
 Requires:       python3-six
 Requires:       shadow-utils
 Requires:       util-linux
-Requires:       /usr/bin/run-parts
+
 %{?systemd_requires}
 
 
@@ -177,6 +177,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Thu Sep 29 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-1
 - Updated to 0.7.8
+- Dropped run-parts dependency [RH:1355917]
 
 * Tue Aug 30 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.7-1
 - Updated to 0.7.7
