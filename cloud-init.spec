@@ -36,6 +36,10 @@ Patch7:         cloud-init-0.7.8-dnf.patch
 # https://bugs.launchpad.net/cloud-init/+bug/1629149
 Patch8:         cloud-init-0.7.8-apt-dns-test.patch
 
+# Ensure cloud-init-local runs before NetworkManager
+# https://git.launchpad.net/cloud-init/commit/?id=1b71b47
+Patch9:         cloud-init-0.7.8-before-nm.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig
@@ -178,6 +182,7 @@ rm -rf $RPM_BUILD_ROOT
 * Thu Sep 29 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-1
 - Updated to 0.7.8
 - Dropped run-parts dependency [RH:1355917]
+- Ordered cloud-init-local before NetworkManager
 
 * Tue Aug 30 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.7-1
 - Updated to 0.7.7
