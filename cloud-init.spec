@@ -1,5 +1,5 @@
 Name:           cloud-init
-Version:        0.7.7
+Version:        0.7.8
 Release:        1%{?dist}
 Summary:        Cloud instance init scripts
 
@@ -13,11 +13,11 @@ Source1:        cloud-init-fedora.cfg
 Source2:        cloud-init-README.fedora
 Source3:        cloud-init-tmpfiles.conf
 
-Patch0:         cloud-init-0.7.6-bzr1245-fedora.patch
+Patch0:         cloud-init-0.7.8-fedora.patch
 
 # Fix rsyslog log filtering
 # https://code.launchpad.net/~gholms/cloud-init/rsyslog-programname/+merge/186906
-Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
+#Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
 
 # Add 3 ecdsa-sha2-nistp* ssh key types now that they are standardized
 # https://bugzilla.redhat.com/show_bug.cgi?id=1151824
@@ -30,7 +30,11 @@ Patch4:         cloud-init-0.7.6-bzr1245-groupadd-list.patch
 
 # Use dnf instead of yum when available
 # https://bugzilla.redhat.com/show_bug.cgi?id=1194451
-Patch7:         cloud-init-0.7.6-dnf.patch
+Patch7:         cloud-init-0.7.8-dnf.patch
+
+# Skip apt-source tests that are sensitive to the system's hostname
+# https://bugs.launchpad.net/cloud-init/+bug/1629149
+Patch8:         cloud-init-0.7.8-apt-dns-test.patch
 
 BuildArch:      noarch
 
@@ -151,6 +155,9 @@ rm -rf $RPM_BUILD_ROOT
 %doc               %{_sysconfdir}/cloud/cloud.cfg.d/README
 %dir               %{_sysconfdir}/cloud/templates
 %config(noreplace) %{_sysconfdir}/cloud/templates/*
+%dir               %{_sysconfdir}/rsyslog.d
+%config(noreplace) %{_sysconfdir}/rsyslog.d/21-cloudinit.conf
+%{_sysconfdir}/NetworkManager/dispatcher.d/hook-network-manager
 /lib/udev/rules.d/66-azure-ephemeral.rules
 %{_unitdir}/cloud-config.service
 %{_unitdir}/cloud-final.service
@@ -165,11 +172,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cloud-init*
 %dir /run/cloud-init
 %dir /var/lib/cloud
-%dir %{_sysconfdir}/rsyslog.d
-%config(noreplace) %{_sysconfdir}/rsyslog.d/21-cloudinit.conf
 
 
 %changelog
+* Thu Sep 29 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-1
+- Updated to 0.7.8
+
 * Tue Aug 30 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.7-1
 - Updated to 0.7.7
 

@@ -1,7 +1,7 @@
-Index: cloud-init-0.7.6/cloudinit/distros/rhel.py
+Index: cloud-init-0.7.8/cloudinit/distros/rhel.py
 ===================================================================
---- cloud-init-0.7.6.orig/cloudinit/distros/rhel.py
-+++ cloud-init-0.7.6/cloudinit/distros/rhel.py
+--- cloud-init-0.7.8.orig/cloudinit/distros/rhel.py
++++ cloud-init-0.7.8/cloudinit/distros/rhel.py
 @@ -20,6 +20,8 @@
  #    You should have received a copy of the GNU General Public License
  #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
@@ -11,7 +11,7 @@ Index: cloud-init-0.7.6/cloudinit/distros/rhel.py
  from cloudinit import distros
  from cloudinit import helpers
  from cloudinit import log as logging
-@@ -181,13 +183,12 @@ class Distro(distros.Distro):
+@@ -201,13 +203,12 @@ class Distro(distros.Distro):
          if pkgs is None:
              pkgs = []
  
@@ -26,7 +26,7 @@ Index: cloud-init-0.7.6/cloudinit/distros/rhel.py
 +            LOG.debug('Using DNF for package management')
 +            cmd = ['dnf']
 +        else:
-+            LOG.debug('Using DNF for package management')
++            LOG.debug('Using YUM for package management')
 +            cmd = ['yum', '-t']
          # Determines whether or not yum prompts for confirmation
          # of critical actions. We don't want to prompt...
