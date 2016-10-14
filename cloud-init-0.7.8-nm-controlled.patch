@@ -1,0 +1,32 @@
+Index: cloud-init-0.7.8/cloudinit/net/sysconfig.py
+===================================================================
+--- cloud-init-0.7.8.orig/cloudinit/net/sysconfig.py
++++ cloud-init-0.7.8/cloudinit/net/sysconfig.py
+@@ -181,7 +181,6 @@ class Renderer(renderer.Renderer):
+     iface_defaults = tuple([
+         ('ONBOOT', True),
+         ('USERCTL', False),
+-        ('NM_CONTROLLED', False),
+         ('BOOTPROTO', 'none'),
+     ])
+ 
+Index: cloud-init-0.7.8/tests/unittests/test_net.py
+===================================================================
+--- cloud-init-0.7.8.orig/tests/unittests/test_net.py
++++ cloud-init-0.7.8/tests/unittests/test_net.py
+@@ -119,7 +119,6 @@ GATEWAY=172.19.3.254
+ HWADDR=fa:16:3e:ed:9a:59
+ IPADDR=172.19.1.34
+ NETMASK=255.255.252.0
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -483,7 +482,6 @@ class TestSysConfigRendering(TestCase):
+ BOOTPROTO=dhcp
+ DEVICE=eth1000
+ HWADDR=07-1C-C6-75-A4-BE
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no

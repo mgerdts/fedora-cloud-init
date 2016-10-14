@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.8
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
@@ -44,6 +44,10 @@ Patch9:         cloud-init-0.7.8-before-nm.patch
 # https://git.launchpad.net/cloud-init/commit/?id=9f83bb8
 # https://bugzilla.redhat.com/show_bug.cgi?id=1380489
 Patch10:        cloud-init-0.7.8-digitalocean-net.patch
+
+# Do not write NM_CONTROLLED=no in generated interface config files
+# https://bugzilla.redhat.com/show_bug.cgi?id=1385172
+Patch11:        cloud-init-0.7.8-nm-controlled.patch
 
 BuildArch:      noarch
 
@@ -185,6 +189,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Oct 14 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-2
+- Stopped writing NM_CONTROLLED=no to interface config files [RH:1385172]
+
 * Thu Sep 29 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-1
 - Updated to 0.7.8
 - Dropped run-parts dependency [RH:1355917]
