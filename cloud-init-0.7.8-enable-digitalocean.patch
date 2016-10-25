@@ -1,0 +1,12 @@
+Index: cloud-init-0.7.8/cloudinit/settings.py
+===================================================================
+--- cloud-init-0.7.8.orig/cloudinit/settings.py
++++ cloud-init-0.7.8/cloudinit/settings.py
+@@ -32,6 +32,7 @@ CFG_BUILTIN = {
+         'NoCloud',
+         'ConfigDrive',
+         'OpenNebula',
++        'DigitalOcean',
+         'Azure',
+         'AltCloud',
+         'OVF',
