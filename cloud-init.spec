@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.8
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Dec 13 2016 Charalampos Stratakis <cstratak@redhat.com> - 0.7.8-4
+- Rebuild for Python 3.6
+
 * Tue Oct 25 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-3
 - Enabled the DigitalOcean metadata provider by default [RH:1388568]
 
