@@ -1,0 +1,28 @@
+From 8c4de19989caec2cd06cb7aef78b7c66621a54d7 Mon Sep 17 00:00:00 2001
+From: Colin Walters <walters@verbum.org>
+Date: Fri, 20 Jan 2017 11:17:16 -0500
+Subject: [PATCH] tests: Neuter lxd testing
+
+We aren't going to support our cloud-init build in lxd, and it requires pylxd
+bindings, which I'm not going to package myself.
+---
+ tests/cloud_tests/platforms/__init__.py | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/tests/cloud_tests/platforms/__init__.py b/tests/cloud_tests/platforms/__init__.py
+index f9f5603..b21aba0 100644
+--- a/tests/cloud_tests/platforms/__init__.py
++++ b/tests/cloud_tests/platforms/__init__.py
+@@ -1,9 +1,6 @@
+ # This file is part of cloud-init. See LICENSE file for license information.
+ 
+-from tests.cloud_tests.platforms import lxd
+-
+ PLATFORMS = {
+-    'lxd': lxd.LXDPlatform,
+ }
+ 
+ 
+-- 
+2.9.3
+

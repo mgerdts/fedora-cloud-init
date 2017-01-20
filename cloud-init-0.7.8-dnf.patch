@@ -1,17 +1,8 @@
-Index: cloud-init-0.7.8/cloudinit/distros/rhel.py
-===================================================================
---- cloud-init-0.7.8.orig/cloudinit/distros/rhel.py
-+++ cloud-init-0.7.8/cloudinit/distros/rhel.py
-@@ -20,6 +20,8 @@
- #    You should have received a copy of the GNU General Public License
- #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
-+import os.path
-+
- from cloudinit import distros
- from cloudinit import helpers
- from cloudinit import log as logging
-@@ -201,13 +203,12 @@ class Distro(distros.Distro):
+diff --git a/cloudinit/distros/rhel.py b/cloudinit/distros/rhel.py
+index aa55838..0d47693 100644
+--- a/cloudinit/distros/rhel.py
++++ b/cloudinit/distros/rhel.py
+@@ -190,13 +190,17 @@ class Distro(distros.Distro):
          if pkgs is None:
              pkgs = []
  
@@ -23,10 +14,15 @@ Index: cloud-init-0.7.8/cloudinit/distros/rhel.py
 -        # installed.
 -        cmd.append("-t")
 +        if os.path.isfile('/usr/bin/dnf'):
-+            LOG.debug('Using DNF for package management')
++            LOG.debug('Using dnf for package management')
 +            cmd = ['dnf']
 +        else:
-+            LOG.debug('Using YUM for package management')
++            LOG.debug('Using yum for package management')
++            # If enabled, then yum will be tolerant of errors on the command line
++            # with regard to packages.
++            # For example: if you request to install foo, bar and baz and baz is
++            # installed; yum won't error out complaining that baz is already
++            # installed.
 +            cmd = ['yum', '-t']
          # Determines whether or not yum prompts for confirmation
          # of critical actions. We don't want to prompt...

@@ -1,28 +1,8 @@
-Index: cloud-init-0.7.8/setup.py
-===================================================================
---- cloud-init-0.7.8.orig/setup.py
-+++ cloud-init-0.7.8/setup.py
-@@ -179,7 +179,6 @@ else:
-         (ETC + '/cloud/cloud.cfg.d', glob('config/cloud.cfg.d/*')),
-         (ETC + '/cloud/templates', glob('templates/*')),
-         (ETC + '/NetworkManager/dispatcher.d/', ['tools/hook-network-manager']),
--        (ETC + '/dhcp/dhclient-exit-hooks.d/', ['tools/hook-dhclient']),
-         (USR_LIB_EXEC + '/cloud-init', ['tools/uncloud-init',
-                                         'tools/write-ssh-key-fingerprints']),
-         (USR + '/share/doc/cloud-init', [f for f in glob('doc/*') if is_f(f)]),
-@@ -211,7 +210,6 @@ setuptools.setup(
-     scripts=['tools/cloud-init-per'],
-     license='GPLv3',
-     data_files=data_files,
--    install_requires=requirements,
-     cmdclass=cmdclass,
-     entry_points={
-         'console_scripts': [
-Index: cloud-init-0.7.8/cloudinit/settings.py
-===================================================================
---- cloud-init-0.7.8.orig/cloudinit/settings.py
-+++ cloud-init-0.7.8/cloudinit/settings.py
-@@ -48,13 +48,16 @@ CFG_BUILTIN = {
+diff --git a/cloudinit/settings.py b/cloudinit/settings.py
+index b1fdd31..eabc67c 100644
+--- a/cloudinit/settings.py
++++ b/cloudinit/settings.py
+@@ -37,13 +37,16 @@ CFG_BUILTIN = {
      ],
      'def_log_file': '/var/log/cloud-init.log',
      'log_cfgs': [],
@@ -41,3 +21,23 @@ Index: cloud-init-0.7.8/cloudinit/settings.py
      },
      'vendor_data': {'enabled': True, 'prefix': []},
  }
+diff --git a/setup.py b/setup.py
+index 0403607..d213e66 100755
+--- a/setup.py
++++ b/setup.py
+@@ -167,7 +167,6 @@ else:
+         (ETC + '/cloud/cloud.cfg.d', glob('config/cloud.cfg.d/*')),
+         (ETC + '/cloud/templates', glob('templates/*')),
+         (ETC + '/NetworkManager/dispatcher.d/', ['tools/hook-network-manager']),
+-        (ETC + '/dhcp/dhclient-exit-hooks.d/', ['tools/hook-dhclient']),
+         (USR_LIB_EXEC + '/cloud-init', ['tools/uncloud-init',
+                                         'tools/write-ssh-key-fingerprints']),
+         (USR + '/share/doc/cloud-init', [f for f in glob('doc/*') if is_f(f)]),
+@@ -199,7 +198,6 @@ setuptools.setup(
+     scripts=['tools/cloud-init-per'],
+     license='Dual-licensed under GPLv3 or Apache 2.0',
+     data_files=data_files,
+-    install_requires=requirements,
+     cmdclass=cmdclass,
+     entry_points={
+         'console_scripts': [
