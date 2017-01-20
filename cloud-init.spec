@@ -131,7 +131,7 @@ cp -p tools/21-cloudinit.conf $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d/21-cloudi
 
 
 %check
-nosetests-%{python3_version}
+nosetests-%{python3_version} tests/unittests/
 
 
 %clean
