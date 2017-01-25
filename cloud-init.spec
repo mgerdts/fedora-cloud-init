@@ -54,6 +54,11 @@ Patch11:        cloud-init-0.7.8-nm-controlled.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1388568
 Patch12:        cloud-init-0.7.8-enable-digitalocean.patch
 
+# Get rid of dependency loop in systemd units
+# https://bugzilla.redhat.com/show_bug.cgi?id=1393094
+# https://git.launchpad.net/cloud-init/commit/?id=3705bb5964a2ff3f9a67265e6d090a112b35e40c
+Patch14:        cloud-init-0.7.8-systemd-loop.target
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig

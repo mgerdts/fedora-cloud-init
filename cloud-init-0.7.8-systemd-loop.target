@@ -1,0 +1,37 @@
+From 3705bb5964a2ff3f9a67265e6d090a112b35e40c Mon Sep 17 00:00:00 2001
+From: Scott Moser <smoser@brickies.net>
+Date: Thu, 15 Sep 2016 09:30:50 -0400
+Subject: [PATCH] systemd: put cloud-init.target After multi-user.target
+
+When we moved cloud-final.service to run After multi-user.target it
+caused a dependency loop (as cloud-init.target was still implied to be
+Before multi-user.target).
+
+journalctl would either show:
+  cloud-init.target: Breaking ordering cycle by deleting job
+     cloud-final.service/start
+or
+  multi-user.target: Breaking ordering cycle by deleting job
+     cloud-init.target/start
+
+The fix here is to clearly state that cloud-init.target is also
+  After multi-user.target
+
+LP: #1623868
+---
+ systemd/cloud-init.target | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/systemd/cloud-init.target b/systemd/cloud-init.target
+index a63babb..d568458 100644
+--- a/systemd/cloud-init.target
++++ b/systemd/cloud-init.target
+@@ -4,3 +4,4 @@
+ #  b.) touch a file /etc/cloud/cloud-init.disabled
+ [Unit]
+ Description=Cloud-init target
++After=multi-user.target
+--
+2.7.4
+
+
