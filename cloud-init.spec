@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.8
-Release:        3%{?dist}
+Release:        5%{?dist}
 Summary:        Cloud instance init scripts
 
 Group:          System Environment/Base
@@ -17,7 +17,7 @@ Patch0:         cloud-init-0.7.8-fedora.patch
 
 # Fix rsyslog log filtering
 # https://code.launchpad.net/~gholms/cloud-init/rsyslog-programname/+merge/186906
-#Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
+Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
 
 # Add 3 ecdsa-sha2-nistp* ssh key types now that they are standardized
 # https://bugzilla.redhat.com/show_bug.cgi?id=1151824
@@ -194,6 +194,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
+- Re-applied rsyslog configuration fixes
+
 * Tue Oct 25 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-3
 - Enabled the DigitalOcean metadata provider by default [RH:1388568]
 
