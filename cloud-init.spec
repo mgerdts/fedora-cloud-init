@@ -207,6 +207,7 @@ rm -rf $RPM_BUILD_ROOT
 * Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
 - Re-applied rsyslog configuration fixes
 - Disabled GCE tests broken by python-httpretty-0.8.14-1.20161011git70af1f8
+- Fixed systemd dependency loop for cloud-init.target [RH:1393094]
 
 * Tue Oct 25 2016 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-3
 - Enabled the DigitalOcean metadata provider by default [RH:1388568]
