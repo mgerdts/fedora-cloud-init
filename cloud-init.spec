@@ -21,8 +21,9 @@ Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
 
 # Add 3 ecdsa-sha2-nistp* ssh key types now that they are standardized
 # https://bugzilla.redhat.com/show_bug.cgi?id=1151824
-# FIXME: was this really sent upstream?  The launchpad link is broken
-Patch3:         cloud-init-0.7.6-bzr1245-ecdsa.patch
+# https://bugs.launchpad.net/cloud-init/+bug/1658174
+# https://git.launchpad.net/cloud-init/commit/?id=853df0a0e85002582694b88db886f206f64b23c7
+Patch3:         cloud-init-0.7.9-ecdsa.patch
 
 # Use dnf instead of yum when available
 # https://bugzilla.redhat.com/show_bug.cgi?id=1194451
@@ -36,8 +37,8 @@ Patch8:         cloud-init-0.7.8-apt-dns-test.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1385172
 Patch11:        cloud-init-0.7.8-nm-controlled.patch
 
-# Requires pylxd
-Patch12: tests-Neuter-lxd-testing.patch
+# Disable tests that require pylxd
+Patch12:        cloud-init-0.7.9-disable-lxd-tests.patch
 
 BuildArch:      noarch
 
