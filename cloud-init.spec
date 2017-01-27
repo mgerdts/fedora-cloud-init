@@ -17,7 +17,7 @@ Patch0:         cloud-init-0.7.8-fedora.patch
 
 # Fix rsyslog log filtering
 # https://code.launchpad.net/~gholms/cloud-init/rsyslog-programname/+merge/186906
-#Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
+Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
 
 # Add 3 ecdsa-sha2-nistp* ssh key types now that they are standardized
 # https://bugzilla.redhat.com/show_bug.cgi?id=1151824
@@ -39,7 +39,6 @@ Patch11:        cloud-init-0.7.8-nm-controlled.patch
 # Requires pylxd
 Patch12: tests-Neuter-lxd-testing.patch
 # Not debugged/upstreamed yet
-Patch13: Delete-GCE-test-it-s-failing.patch
 Patch14: disable-failing-tests.patch
 
 BuildArch:      noarch
@@ -131,7 +130,12 @@ cp -p tools/21-cloudinit.conf $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d/21-cloudi
 
 
 %check
-nosetests-%{python3_version} tests/unittests/
+# python-httpretty-0.8.14 broke several GCE tests
+# https://github.com/gabrielfalcao/HTTPretty/issues/316
+nosetests-%{python3_version} tests/unittests/ \
+    -e test_instance_level_keys_replace_project_level_keys \
+    -e test_instance_level_ssh_keys_are_used \
+    -e test_metadata_encoding
 
 
 %clean
@@ -182,9 +186,13 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
+- Re-applied rsyslog configuration fixes
+- Disabled GCE tests broken by python-httpretty-0.8.14-1.20161011git70af1f8
+- Fixed systemd dependency loop for cloud-init.target [RH:1393094]
+
 * Fri Jan 20 2017 Colin Walters <walters@verbum.org> - 0.7.9-1
-- New upstream version
-  Resolves: #1393094
+- New upstream version [RH:1393094]
 
 * Tue Dec 13 2016 Charalampos Stratakis <cstratak@redhat.com> - 0.7.8-4
 - Rebuild for Python 3.6
