@@ -2,13 +2,10 @@ Name:           cloud-init
 Version:        0.7.9
 Release:        1%{?dist}
 Summary:        Cloud instance init scripts
-
-Group:          System Environment/Base
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
+
 Source0:        https://launchpad.net/cloud-init/trunk/%{version}/+download/%{name}-%{version}.tar.gz
-# bzr export -r 1245 cloud-init-0.7.6-bzr1245.tar.gz lp:cloud-init
-#Source0:        cloud-init-0.7.6-bzr1245.tar.gz
 Source1:        cloud-init-fedora.cfg
 Source2:        cloud-init-README.fedora
 Source3:        cloud-init-tmpfiles.conf
@@ -42,12 +39,10 @@ Patch12:        cloud-init-0.7.9-disable-lxd-tests.patch
 
 BuildArch:      noarch
 
-BuildRequires:  pkgconfig
+BuildRequires:  pkgconfig(systemd)
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  systemd
-# For pkgconfig
-BuildRequires:  systemd-devel
 
 # For tests
 BuildRequires:  iproute
@@ -108,7 +103,6 @@ cp -p %{SOURCE2} README.fedora
 
 
 %install
-rm -rf $RPM_BUILD_ROOT
 %{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT --init-system=systemd
 
 # Don't ship the tests
@@ -137,13 +131,7 @@ nosetests-%{python3_version} tests/unittests/ \
     -e test_metadata_encoding
 
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-
 %post
-# These services are now enabled by the cloud image's kickstart.
-# They should probably be done with a preset instead.
 %systemd_post cloud-config.service cloud-config.target cloud-final.service cloud-init.service cloud-init.target cloud-init-local.service
 
 
