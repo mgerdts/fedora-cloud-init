@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -36,6 +36,10 @@ Patch11:        cloud-init-0.7.8-nm-controlled.patch
 
 # Disable tests that require pylxd
 Patch12:        cloud-init-0.7.9-disable-lxd-tests.patch
+
+# Fix calls to hostnamectl occurring before dbus is up
+# https://bugzilla.redhat.com/show_bug.cgi?id=1417025
+Patch13:        cloud-init-0.7.9-defaultdeps.patch
 
 BuildArch:      noarch
 
@@ -173,6 +177,9 @@ nosetests-%{python3_version} tests/unittests/ \
 
 
 %changelog
+* Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-2
+- Fixed hostnamectl running before dbus is up [RH:1417025]
+
 * Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
 - Re-applied rsyslog configuration fixes
 - Disabled GCE tests broken by python-httpretty-0.8.14-1.20161011git70af1f8
