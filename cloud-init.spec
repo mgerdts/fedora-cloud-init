@@ -38,8 +38,6 @@ Patch11:        cloud-init-0.7.8-nm-controlled.patch
 
 # Requires pylxd
 Patch12: tests-Neuter-lxd-testing.patch
-# Not debugged/upstreamed yet
-Patch14: disable-failing-tests.patch
 
 BuildArch:      noarch
 
