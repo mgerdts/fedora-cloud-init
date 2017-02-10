@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -177,6 +177,9 @@ nosetests-%{python3_version} tests/unittests/ \
 
 
 %changelog
+* Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
+
 * Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-2
 - Fixed hostnamectl running before dbus is up [RH:1417025]
 
