@@ -6,7 +6,7 @@ Index: cloud-init-0.7.8/systemd/cloud-init-local.service
  Wants=network-pre.target
  After=local-fs.target
  Conflicts=shutdown.target
-+Before=NetworkManager.target
++Before=NetworkManager.service
  Before=network-pre.target
  Before=shutdown.target
  

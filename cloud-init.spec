@@ -59,6 +59,13 @@ Patch12:        cloud-init-0.7.8-enable-digitalocean.patch
 # https://git.launchpad.net/cloud-init/commit/?id=3705bb5964a2ff3f9a67265e6d090a112b35e40c
 Patch14:        cloud-init-0.7.8-systemd-loop.target
 
+# Order cloud-init.service after network.service and NetworkManager.service
+# cloud-init.service is meant to run when networking is up, but before
+# network-online.target unleashes other services in case people want to
+# set up networking customizations that run before those services do.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1400249
+Patch15:        cloud-init-0.7.8-before-network-target.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig
@@ -200,6 +207,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
+- Ordered cloud-init.service after network.service and NetworkManager.service [RH:1400249]
+
 * Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
 - Re-applied rsyslog configuration fixes
 - Disabled GCE tests broken by python-httpretty-0.8.14-1.20161011git70af1f8
