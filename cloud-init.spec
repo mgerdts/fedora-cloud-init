@@ -66,6 +66,11 @@ Patch14:        cloud-init-0.7.8-systemd-loop.target
 # https://bugzilla.redhat.com/show_bug.cgi?id=1400249
 Patch15:        cloud-init-0.7.8-before-network-target.patch
 
+# Do not cache IAM instance profile credentials on disk
+# https://bugs.launchpad.net/cloud-init/+bug/1638312
+# https://git.launchpad.net/cloud-init/commit/?id=b71592ce0e0a9f9f9f225315015ca57b312ad30d
+Patch16:        cloud-init-0.7.8-credcache.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig
@@ -209,6 +214,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
 - Ordered cloud-init.service after network.service and NetworkManager.service [RH:1400249]
+- Stopped caching IAM instance profile credentials on disk [LP:1638312]
 
 * Fri Jan 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
 - Re-applied rsyslog configuration fixes
