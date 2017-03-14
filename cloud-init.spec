@@ -218,7 +218,7 @@ nosetests-%{python3_version} tests/unittests/
 - Fixed IPv6 gateways in network sysconfig [LP:1669504]
 - Ordered cloud-init.service after network.service and NetworkManager.service [RH:1400249]
 
-* Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
+* Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-6
 - Ordered cloud-init.service after network.service and NetworkManager.service [RH:1400249]
 - Stopped caching IAM instance profile credentials on disk [LP:1638312]
 
