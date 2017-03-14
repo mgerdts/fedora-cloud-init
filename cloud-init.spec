@@ -49,6 +49,12 @@ Patch13:        cloud-init-0.7.9-systemd-cloud-init.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1428492
 Patch14:        cloud-init-0.7.9-systemd-cloud-final.patch
 
+# Fix errors in network sysconfig handling
+# https://bugzilla.redhat.com/show_bug.cgi?id=1389530
+# https://bugs.launchpad.net/cloud-init/+bug/1665441
+# https://git.launchpad.net/cloud-init/commit/?id=f81d6c7bde2af206d449de593b35773068270c84
+Patch15:        cloud-init-0.7.9-sysconfig-iface.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig(systemd)
@@ -188,6 +194,7 @@ nosetests-%{python3_version} tests/unittests/ \
 * Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-4
 - Fixed systemd dependency cycle with cloud-final and os-collect-config [RH:1420946, RH:1428492]
 - Fixed systemd dependency cycle with cloud-init and multi-user.target [RH:1428492, RH:1430511]
+- Fixed errors in network sysconfig handling [RH:1389530, LP:1665441]
 
 * Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
