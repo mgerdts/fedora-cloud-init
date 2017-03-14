@@ -71,7 +71,8 @@ BuildRequires:  systemd-devel
 # For tests
 BuildRequires:  iproute
 BuildRequires:  python3-configobj
-BuildRequires:  python3-httpretty
+# https://bugzilla.redhat.com/show_bug.cgi?id=1417029
+BuildRequires:  python3-httpretty >= 0.8.14-2
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-jsonpatch
 BuildRequires:  python3-mock
@@ -148,12 +149,7 @@ cp -p tools/21-cloudinit.conf $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d/21-cloudi
 
 
 %check
-# python-httpretty-0.8.14 broke several GCE tests
-# https://github.com/gabrielfalcao/HTTPretty/issues/316
-nosetests-%{python3_version} tests/unittests/ \
-    -e test_instance_level_keys_replace_project_level_keys \
-    -e test_instance_level_ssh_keys_are_used \
-    -e test_metadata_encoding
+nosetests-%{python3_version} tests/unittests/
 
 
 %clean
