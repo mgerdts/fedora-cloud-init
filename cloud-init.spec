@@ -61,6 +61,11 @@ Patch15:        cloud-init-0.7.9-sysconfig-iface.patch
 # https://git.launchpad.net/cloud-init/commit/?id=657fd40f9ee692a817ec4614cd0d6cb0539ffabf
 Patch16:        cloud-init-0.7.9-gt3-nameservers.patch
 
+# Fix IPv6 gateways in network sysconfig
+# https://bugs.launchpad.net/cloud-init/+bug/1669504
+# https://git.launchpad.net/cloud-init/commit/?id=1d751a6f46f044e3c3827f3cef0e4a2e71d50fe7
+Patch17:        cloud-init-0.7.9-ipv6-gateway.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig(systemd)
@@ -202,6 +207,7 @@ nosetests-%{python3_version} tests/unittests/ \
 - Fixed systemd dependency cycle with cloud-init and multi-user.target [RH:1428492, RH:1430511]
 - Fixed errors in network sysconfig handling [RH:1389530, LP:1665441]
 - Made > 3 name servers a warning, not a fatal error, unbreaking IPv6 setups [LP:1670052]
+- Fixed IPv6 gateways in network sysconfig [LP:1669504]
 
 * Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
