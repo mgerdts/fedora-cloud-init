@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -40,6 +40,11 @@ Patch12:        cloud-init-0.7.9-disable-lxd-tests.patch
 # Fix calls to hostnamectl occurring before dbus is up
 # https://bugzilla.redhat.com/show_bug.cgi?id=1417025
 Patch13:        cloud-init-0.7.9-defaultdeps.patch
+
+# Fix systemd dependency cycle with cloud-final and os-collect-config
+# https://bugzilla.redhat.com/show_bug.cgi?id=1420946
+# https://bugzilla.redhat.com/show_bug.cgi?id=1428492
+Patch14:        cloud-init-0.7.9-systemd-cloud-final.patch
 
 BuildArch:      noarch
 
@@ -177,6 +182,9 @@ nosetests-%{python3_version} tests/unittests/ \
 
 
 %changelog
+* Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-4
+- Fixed systemd dependency cycle with cloud-final and os-collect-config [RH:1420946, RH:1428492]
+
 * Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
 
