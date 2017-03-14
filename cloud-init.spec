@@ -66,6 +66,13 @@ Patch16:        cloud-init-0.7.9-gt3-nameservers.patch
 # https://git.launchpad.net/cloud-init/commit/?id=1d751a6f46f044e3c3827f3cef0e4a2e71d50fe7
 Patch17:        cloud-init-0.7.9-ipv6-gateway.patch
 
+# Order cloud-init.service after network.service and NetworkManager.service
+# cloud-init.service is meant to run when networking is up, but before
+# network-online.target unleashes other services in case people want to
+# set up networking customizations that run before those services do.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1400249
+Patch18:        cloud-init-0.7.9-before-network-target.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig(systemd)
@@ -208,6 +215,7 @@ nosetests-%{python3_version} tests/unittests/ \
 - Fixed errors in network sysconfig handling [RH:1389530, LP:1665441]
 - Made > 3 name servers a warning, not a fatal error, unbreaking IPv6 setups [LP:1670052]
 - Fixed IPv6 gateways in network sysconfig [LP:1669504]
+- Ordered cloud-init.service after network.service and NetworkManager.service [RH:1400249]
 
 * Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
