@@ -73,6 +73,11 @@ Patch17:        cloud-init-0.7.9-ipv6-gateway.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1400249
 Patch18:        cloud-init-0.7.9-before-network-target.patch
 
+# Do not cache IAM instance profile credentials on disk
+# https://bugs.launchpad.net/cloud-init/+bug/1638312
+# https://git.launchpad.net/cloud-init/commit/?id=b71592ce0e0a9f9f9f225315015ca57b312ad30d
+Patch19:        cloud-init-0.7.9-credcache.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig(systemd)
@@ -83,7 +88,8 @@ BuildRequires:  systemd
 # For tests
 BuildRequires:  iproute
 BuildRequires:  python3-configobj
-BuildRequires:  python3-httpretty
+# https://bugzilla.redhat.com/show_bug.cgi?id=1417029
+BuildRequires:  python3-httpretty >= 0.8.14-2
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-jsonpatch
 BuildRequires:  python3-mock
@@ -159,12 +165,7 @@ cp -p tools/21-cloudinit.conf $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d/21-cloudi
 
 
 %check
-# python-httpretty-0.8.14 broke several GCE tests
-# https://github.com/gabrielfalcao/HTTPretty/issues/316
-nosetests-%{python3_version} tests/unittests/ \
-    -e test_instance_level_keys_replace_project_level_keys \
-    -e test_instance_level_ssh_keys_are_used \
-    -e test_metadata_encoding
+nosetests-%{python3_version} tests/unittests/
 
 
 %post
@@ -216,6 +217,10 @@ nosetests-%{python3_version} tests/unittests/ \
 - Made > 3 name servers a warning, not a fatal error, unbreaking IPv6 setups [LP:1670052]
 - Fixed IPv6 gateways in network sysconfig [LP:1669504]
 - Ordered cloud-init.service after network.service and NetworkManager.service [RH:1400249]
+
+* Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.8-5
+- Ordered cloud-init.service after network.service and NetworkManager.service [RH:1400249]
+- Stopped caching IAM instance profile credentials on disk [LP:1638312]
 
 * Fri Feb 10 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild

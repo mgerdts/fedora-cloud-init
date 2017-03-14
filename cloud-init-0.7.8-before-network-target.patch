@@ -1,0 +1,14 @@
+Index: cloud-init-0.7.8/systemd/cloud-init.service
+===================================================================
+--- cloud-init-0.7.8.orig/systemd/cloud-init.service
++++ cloud-init-0.7.8/systemd/cloud-init.service
+@@ -1,8 +1,7 @@
+ [Unit]
+ Description=Initial cloud-init job (metadata service crawler)
+-After=cloud-init-local.service networking.service
++After=cloud-init-local.service network.service NetworkManager.service
+ Before=network-online.target sshd.service sshd-keygen.service systemd-user-sessions.service
+-Requires=networking.service
+ Wants=local-fs.target cloud-init-local.service sshd.service sshd-keygen.service
+ 
+ [Service]
