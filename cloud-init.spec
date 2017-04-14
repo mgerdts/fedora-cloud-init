@@ -85,6 +85,11 @@ Patch19:        cloud-init-0.7.9-credcache.patch
 # https://git.launchpad.net/cloud-init/commit/?id=493f6c3e923902d5d4f3d87e1cc4c726ea90ada4
 Patch20:        cloud-init-0.7.9-digitalocean-loopback.patch
 
+# Configure all NICs presented in DigitalOcean metadata
+# https://bugzilla.redhat.com/show_bug.cgi?id=1442463
+# https://git.launchpad.net/cloud-init/commit/?id=ff44056771416cb811879b13b97f88d8f2057071
+Patch21:        quilt_patches/cloud-init-0.7.9-digitalocean-all-nics.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig(systemd)
@@ -219,6 +224,7 @@ nosetests-%{python3_version} tests/unittests/
 %changelog
 * Fri Apr 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-5
 - Made DigitalOcean DNS server handling consistent with OpenStack [RH:1442463, LP:1675571]
+- Improved handling of multiple NICs on DigitalOcean [RH:1442463]
 
 * Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-4
 - Fixed systemd dependency cycle with cloud-final and os-collect-config [RH:1420946, RH:1428492]
