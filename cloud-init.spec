@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -77,6 +77,13 @@ Patch18:        cloud-init-0.7.9-before-network-target.patch
 # https://bugs.launchpad.net/cloud-init/+bug/1638312
 # https://git.launchpad.net/cloud-init/commit/?id=b71592ce0e0a9f9f9f225315015ca57b312ad30d
 Patch19:        cloud-init-0.7.9-credcache.patch
+
+# Make DigitalOcean data sources handle DNS servers similar to OpenStack
+# https://bugzilla.redhat.com/show_bug.cgi?id=1442463
+# https://bugs.launchpad.net/cloud-init/+bug/1675571
+# https://git.launchpad.net/cloud-init/commit/?id=5442b517ebe5508159a46d11d500fbc6ad854ba0
+# https://git.launchpad.net/cloud-init/commit/?id=493f6c3e923902d5d4f3d87e1cc4c726ea90ada4
+Patch20:        cloud-init-0.7.9-digitalocean-loopback.patch
 
 BuildArch:      noarch
 
@@ -210,6 +217,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Fri Apr 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-5
+- Made DigitalOcean DNS server handling consistent with OpenStack [RH:1442463, LP:1675571]
+
 * Tue Mar 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-4
 - Fixed systemd dependency cycle with cloud-final and os-collect-config [RH:1420946, RH:1428492]
 - Fixed systemd dependency cycle with cloud-init and multi-user.target [RH:1428492, RH:1430511]
