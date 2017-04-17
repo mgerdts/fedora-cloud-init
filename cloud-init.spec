@@ -159,11 +159,11 @@ cp -p %{SOURCE2} README.fedora
 
 
 %build
-%{__python3} setup.py build
+%py3_build
 
 
 %install
-%{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT --init-system=systemd
+%py3_install -- --init-system=systemd
 
 # Don't ship the tests
 rm -r $RPM_BUILD_ROOT%{python3_sitelib}/tests
