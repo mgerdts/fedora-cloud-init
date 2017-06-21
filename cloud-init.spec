@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -24,7 +24,8 @@ Patch3:         cloud-init-0.7.9-ecdsa.patch
 
 # Use dnf instead of yum when available
 # https://bugzilla.redhat.com/show_bug.cgi?id=1194451
-Patch7:         cloud-init-0.7.8-dnf.patch
+# https://git.launchpad.net/cloud-init/commit/?id=a3daf184fd47dede8d91588281437453bd38fc1c
+Patch7:         cloud-init-0.7.9-dnf.patch
 
 # Skip apt-source tests that are sensitive to the system's hostname
 # https://bugs.launchpad.net/cloud-init/+bug/1629149
@@ -228,6 +229,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Wed Jun 21 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-6
+- Fixed NameError in package module [RH:1447708]
+
 * Fri Apr 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-5
 - Made DigitalOcean DNS server handling consistent with OpenStack [RH:1442463, LP:1675571]
 - Improved handling of multiple NICs on DigitalOcean [RH:1442463]
