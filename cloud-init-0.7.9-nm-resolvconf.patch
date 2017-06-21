@@ -1,0 +1,124 @@
+Index: cloud-init-0.7.9/cloudinit/distros/parsers/networkmanager_conf.py
+===================================================================
+--- /dev/null
++++ cloud-init-0.7.9/cloudinit/distros/parsers/networkmanager_conf.py
+@@ -0,0 +1,23 @@
++# Copyright (C) 2017 Red Hat, Inc.
++#
++# Author: Ryan McCabe <rmccabe@redhat.com>
++#
++# This file is part of cloud-init. See LICENSE file for license information.
++
++import configobj
++
++# This module is used to set additional NetworkManager configuration
++# in /etc/NetworkManager/conf.d
++#
++
++
++class NetworkManagerConf(configobj.ConfigObj):
++    def __init__(self, contents):
++        configobj.ConfigObj.__init__(self, contents,
++                                     interpolation=False,
++                                     write_empty_values=False)
++
++    def set_section_keypair(self, section_name, key, value):
++        if section_name not in self.sections:
++            self.main[section_name] = {}
++        self.main[section_name] = {key: value}
+Index: cloud-init-0.7.9/cloudinit/net/sysconfig.py
+===================================================================
+--- cloud-init-0.7.9.orig/cloudinit/net/sysconfig.py
++++ cloud-init-0.7.9/cloudinit/net/sysconfig.py
+@@ -5,6 +5,7 @@ import re
+ 
+ import six
+ 
++from cloudinit.distros.parsers import networkmanager_conf
+ from cloudinit.distros.parsers import resolv_conf
+ from cloudinit import util
+ 
+@@ -197,6 +198,9 @@ class Renderer(renderer.Renderer):
+         self.netrules_path = config.get(
+             'netrules_path', 'etc/udev/rules.d/70-persistent-net.rules')
+         self.dns_path = config.get('dns_path', 'etc/resolv.conf')
++        nm_conf_path = 'etc/NetworkManager/conf.d/99-cloud-init.conf'
++        self.networkmanager_conf_path = config.get('networkmanager_conf_path',
++                                                   nm_conf_path)
+ 
+     @classmethod
+     def _render_iface_shared(cls, iface, iface_cfg):
+@@ -342,6 +346,21 @@ class Renderer(renderer.Renderer):
+             content.add_search_domain(searchdomain)
+         return "\n".join([_make_header(';'), str(content)])
+ 
++    @staticmethod
++    def _render_networkmanager_conf(network_state):
++        content = networkmanager_conf.NetworkManagerConf("")
++
++        # If DNS server information is provided, configure
++        # NetworkManager to not manage dns, so that /etc/resolv.conf
++        # does not get clobbered.
++        if network_state.dns_nameservers:
++            content.set_section_keypair('main', 'dns', 'none')
++
++        if len(content) == 0:
++            return None
++        out = "".join([_make_header(), "\n", "\n".join(content.write()), "\n"])
++        return out
++
+     @classmethod
+     def _render_bridge_interfaces(cls, network_state, iface_contents):
+         bridge_filter = renderer.filter_by_type('bridge')
+@@ -396,6 +415,12 @@ class Renderer(renderer.Renderer):
+             resolv_content = self._render_dns(network_state,
+                                               existing_dns_path=dns_path)
+             util.write_file(dns_path, resolv_content)
++        if self.networkmanager_conf_path:
++            nm_conf_path = util.target_path(target,
++                                            self.networkmanager_conf_path)
++            nm_conf_content = self._render_networkmanager_conf(network_state)
++            if nm_conf_content:
++                util.write_file(nm_conf_path, nm_conf_content, file_mode)
+         if self.netrules_path:
+             netrules_content = self._render_persistent_net(network_state)
+             netrules_path = os.path.join(target, self.netrules_path)
+Index: cloud-init-0.7.9/tests/unittests/test_net.py
+===================================================================
+--- cloud-init-0.7.9.orig/tests/unittests/test_net.py
++++ cloud-init-0.7.9/tests/unittests/test_net.py
+@@ -162,6 +162,13 @@ NETMASK0=0.0.0.0
+ ;
+ nameserver 172.19.0.12
+ """.lstrip()),
++            ('etc/NetworkManager/conf.d/99-cloud-init.conf',
++             """
++# Created by cloud-init on instance boot automatically, do not edit.
++#
++[main]
++dns = none
++""".lstrip()),
+             ('etc/udev/rules.d/70-persistent-net.rules',
+              "".join(['SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ',
+                       'ATTR{address}=="fa:16:3e:ed:9a:59", NAME="eth0"\n']))]
+@@ -256,6 +263,20 @@ USERCTL=no
+ ;
+ nameserver 172.19.0.12
+ """.lstrip()),
++            ('etc/NetworkManager/conf.d/99-cloud-init.conf',
++             """
++# Created by cloud-init on instance boot automatically, do not edit.
++#
++[main]
++dns = none
++""".lstrip()),
++            ('etc/NetworkManager/conf.d/99-cloud-init.conf',
++             """
++# Created by cloud-init on instance boot automatically, do not edit.
++#
++[main]
++dns = none
++""".lstrip()),
+             ('etc/udev/rules.d/70-persistent-net.rules',
+              "".join(['SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ',
+                       'ATTR{address}=="fa:16:3e:ed:9a:59", NAME="eth0"\n']))]

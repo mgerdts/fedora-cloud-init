@@ -97,6 +97,13 @@ Patch21:        cloud-init-0.7.9-digitalocean-all-nics.patch
 # https://git.launchpad.net/cloud-init/commit/?id=dad97585be0f30202a5a351800f20d4432b94694
 Patch22:        cloud-init-0.7.9-digitalocean-ifindex.patch
 
+# Resolve a conflict between cloud-init and NetworkManager writing resolv.conf
+# https://bugzilla.redhat.com/show_bug.cgi?id=1454491
+# https://bugzilla.redhat.com/show_bug.cgi?id=1461959
+# https://bugs.launchpad.net/cloud-init/+bug/1693251
+# https://git.launchpad.net/cloud-init/commit/?id=67bab5bb804e2346673430868935f6bbcdb88f13
+Patch23:        cloud-init-0.7.9-nm-resolvconf.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig(systemd)
@@ -231,6 +238,7 @@ nosetests-%{python3_version} tests/unittests/
 %changelog
 * Wed Jun 21 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-6
 - Fixed NameError in package module [RH:1447708]
+- Resolved a conflict between cloud-init and NetworkManager writing resolv.conf [RH:1454491 RH:1461959 LP:1693251]
 
 * Fri Apr 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-5
 - Made DigitalOcean DNS server handling consistent with OpenStack [RH:1442463, LP:1675571]
