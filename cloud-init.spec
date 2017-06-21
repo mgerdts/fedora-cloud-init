@@ -104,6 +104,12 @@ Patch22:        cloud-init-0.7.9-digitalocean-ifindex.patch
 # https://git.launchpad.net/cloud-init/commit/?id=67bab5bb804e2346673430868935f6bbcdb88f13
 Patch23:        cloud-init-0.7.9-nm-resolvconf.patch
 
+# Fix broken fs_setup cmd option handling
+# https://bugs.launchpad.net/cloud-init/+bug/1687712
+# https://git.launchpad.net/cloud-init/commit/?id=4f0f171c29bb9abb5cbb6f9adbe68015089aeed9
+# https://git.launchpad.net/cloud-init/commit/?id=951863c211ab0f8c43a9443d080dbbe0f6b454a6
+Patch24:        cloud-init-0.7.9-fs-setup-cmd.patch
+
 BuildArch:      noarch
 
 BuildRequires:  pkgconfig(systemd)
@@ -239,6 +245,7 @@ nosetests-%{python3_version} tests/unittests/
 * Wed Jun 21 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-6
 - Fixed NameError in package module [RH:1447708]
 - Resolved a conflict between cloud-init and NetworkManager writing resolv.conf [RH:1454491 RH:1461959 LP:1693251]
+- Fixed broken fs_setup cmd option [LP:1687712]
 
 * Fri Apr 14 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-5
 - Made DigitalOcean DNS server handling consistent with OpenStack [RH:1442463, LP:1675571]

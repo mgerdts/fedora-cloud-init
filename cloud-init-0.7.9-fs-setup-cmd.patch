@@ -1,0 +1,140 @@
+Index: cloud-init-0.7.9/cloudinit/config/cc_disk_setup.py
+===================================================================
+--- cloud-init-0.7.9.orig/cloudinit/config/cc_disk_setup.py
++++ cloud-init-0.7.9/cloudinit/config/cc_disk_setup.py
+@@ -910,12 +910,23 @@ def mkfs(fs_cfg):
+                         "must be set.", label)
+ 
+     # Create the commands
++    shell = False
+     if fs_cmd:
+         fs_cmd = fs_cfg['cmd'] % {
+             'label': label,
+             'filesystem': fs_type,
+             'device': device,
+         }
++        shell = True
++
++        if overwrite:
++            LOG.warning(
++                "fs_setup:overwrite ignored because cmd was specified: %s",
++                fs_cmd)
++        if fs_opts:
++            LOG.warning(
++                "fs_setup:extra_opts ignored because cmd was specified: %s",
++                fs_cmd)
+     else:
+         # Find the mkfs command
+         mkfs_cmd = util.which("mkfs.%s" % fs_type)
+@@ -936,14 +947,14 @@ def mkfs(fs_cfg):
+         if overwrite or device_type(device) == "disk":
+             fs_cmd.append(lookup_force_flag(fs_type))
+ 
+-    # Add the extends FS options
+-    if fs_opts:
+-        fs_cmd.extend(fs_opts)
++        # Add the extends FS options
++        if fs_opts:
++            fs_cmd.extend(fs_opts)
+ 
+     LOG.debug("Creating file system %s on %s", label, device)
+-    LOG.debug("     Using cmd: %s", " ".join(fs_cmd))
++    LOG.debug("     Using cmd: %s", str(fs_cmd))
+     try:
+-        util.subp(fs_cmd)
++        util.subp(fs_cmd, shell=shell)
+     except Exception as e:
+         raise Exception("Failed to exec of '%s':\n%s" % (fs_cmd, e))
+ 
+Index: cloud-init-0.7.9/doc/examples/cloud-config-disk-setup.txt
+===================================================================
+--- cloud-init-0.7.9.orig/doc/examples/cloud-config-disk-setup.txt
++++ cloud-init-0.7.9/doc/examples/cloud-config-disk-setup.txt
+@@ -155,11 +155,11 @@ fs_setup:
+      filesystem: 'ext3'
+      device: 'ephemeral0'
+      partition: 'auto'
+-   - label:  mylabl2
++   - label: mylabl2
+      filesystem: 'ext4'
+      device: '/dev/xvda1'
+-   - special:
+-     cmd: mkfs -t %(FILESYSTEM)s -L %(LABEL)s %(DEVICE)s
++   - cmd: mkfs -t %(filesystem)s -L %(label)s %(device)s
++     label: mylabl3
+      filesystem: 'btrfs'
+      device: '/dev/xvdh'
+ 
+Index: cloud-init-0.7.9/tests/unittests/test_handler/test_handler_disk_setup.py
+===================================================================
+--- cloud-init-0.7.9.orig/tests/unittests/test_handler/test_handler_disk_setup.py
++++ cloud-init-0.7.9/tests/unittests/test_handler/test_handler_disk_setup.py
+@@ -17,6 +17,10 @@ class TestIsDiskUsed(TestCase):
+         self.check_fs = self.patches.enter_context(
+             mock.patch('{0}.check_fs'.format(mod_name)))
+ 
++    def tearDown(self):
++        super(TestIsDiskUsed, self).tearDown()
++        self.patches.close()
++
+     def test_multiple_child_nodes_returns_true(self):
+         self.enumerate_disk.return_value = (mock.MagicMock() for _ in range(2))
+         self.check_fs.return_value = (mock.MagicMock(), None, mock.MagicMock())
+@@ -103,4 +107,57 @@ class TestGetPartitionMbrLayout(TestCase
+             ',{0},83\n,,82'.format(expected_partition_size),
+             cc_disk_setup.get_partition_mbr_layout(disk_size, [33, [66, 82]]))
+ 
++
++@mock.patch('cloudinit.config.cc_disk_setup.find_device_node',
++            return_value=('/dev/xdb1', False))
++@mock.patch('cloudinit.config.cc_disk_setup.device_type', return_value=None)
++@mock.patch('cloudinit.config.cc_disk_setup.util.subp', return_value=('', ''))
++class TestMkfsCommandHandling(TestCase):
++
++    def test_with_cmd(self, subp, *args):
++        """mkfs honors cmd and logs warnings when extra_opts or overwrite are
++        provided."""
++        with self.assertLogs(
++                'cloudinit.config.cc_disk_setup') as logs:
++            cc_disk_setup.mkfs({
++                'cmd': 'mkfs -t %(filesystem)s -L %(label)s %(device)s',
++                'filesystem': 'ext4',
++                'device': '/dev/xdb1',
++                'label': 'with_cmd',
++                'extra_opts': ['should', 'generate', 'warning'],
++                'overwrite': 'should generate warning too'
++            })
++
++        self.assertIn(
++            'WARNING:cloudinit.config.cc_disk_setup:fs_setup:extra_opts ' +
++            'ignored because cmd was specified: mkfs -t ext4 -L with_cmd ' +
++            '/dev/xdb1',
++            logs.output)
++        self.assertIn(
++            'WARNING:cloudinit.config.cc_disk_setup:fs_setup:overwrite ' +
++            'ignored because cmd was specified: mkfs -t ext4 -L with_cmd ' +
++            '/dev/xdb1',
++            logs.output)
++
++        subp.assert_called_once_with(
++            'mkfs -t ext4 -L with_cmd /dev/xdb1', shell=True)
++
++    @mock.patch('cloudinit.config.cc_disk_setup.util.which')
++    def test_overwrite_and_extra_opts_without_cmd(self, m_which, subp, *args):
++        """mkfs observes extra_opts and overwrite settings when cmd is not
++        present."""
++        m_which.side_effect = lambda p: {'mkfs.ext4': '/sbin/mkfs.ext4'}[p]
++        cc_disk_setup.mkfs({
++            'filesystem': 'ext4',
++            'device': '/dev/xdb1',
++            'label': 'without_cmd',
++            'extra_opts': ['are', 'added'],
++            'overwrite': True
++        })
++
++        subp.assert_called_once_with(
++            ['/sbin/mkfs.ext4', '/dev/xdb1',
++             '-L', 'without_cmd', '-F', 'are', 'added'],
++            shell=False)
++
+ # vi: ts=4 expandtab
