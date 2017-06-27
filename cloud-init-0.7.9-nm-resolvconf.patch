@@ -70,10 +70,22 @@ Index: cloud-init-0.7.9/cloudinit/net/sysconfig.py
      @classmethod
      def _render_bridge_interfaces(cls, network_state, iface_contents):
          bridge_filter = renderer.filter_by_type('bridge')
-@@ -396,6 +415,12 @@ class Renderer(renderer.Renderer):
+@@ -387,18 +406,25 @@ class Renderer(renderer.Renderer):
+         return contents
+ 
+     def render_network_state(self, target, network_state):
++        file_mode = 0o644
+         base_sysconf_dir = os.path.join(target, self.sysconf_dir)
+         for path, data in self._render_sysconfig(base_sysconf_dir,
+                                                  network_state).items():
+-            util.write_file(path, data)
++            util.write_file(path, data, file_mode)
+         if self.dns_path:
+             dns_path = os.path.join(target, self.dns_path)
              resolv_content = self._render_dns(network_state,
                                                existing_dns_path=dns_path)
-             util.write_file(dns_path, resolv_content)
+-            util.write_file(dns_path, resolv_content)
++            util.write_file(dns_path, resolv_content, file_mode)
 +        if self.networkmanager_conf_path:
 +            nm_conf_path = util.target_path(target,
 +                                            self.networkmanager_conf_path)
@@ -83,6 +95,10 @@ Index: cloud-init-0.7.9/cloudinit/net/sysconfig.py
          if self.netrules_path:
              netrules_content = self._render_persistent_net(network_state)
              netrules_path = os.path.join(target, self.netrules_path)
+-            util.write_file(netrules_path, netrules_content)
++            util.write_file(netrules_path, netrules_content, file_mode)
+ 
+ # vi: ts=4 expandtab
 Index: cloud-init-0.7.9/tests/unittests/test_net.py
 ===================================================================
 --- cloud-init-0.7.9.orig/tests/unittests/test_net.py

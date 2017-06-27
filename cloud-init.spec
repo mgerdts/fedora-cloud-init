@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -242,6 +242,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Tue Jun 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-7
+- Fixed broken sysconfig file writing on DigitalOcean [RH:1465440]
+
 * Wed Jun 21 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-6
 - Fixed NameError in package module [RH:1447708]
 - Resolved a conflict between cloud-init and NetworkManager writing resolv.conf [RH:1454491 RH:1461959 LP:1693251]
