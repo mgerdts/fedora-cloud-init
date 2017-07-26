@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -242,6 +242,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-8
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
 * Tue Jun 27 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 0.7.9-7
 - Fixed broken sysconfig file writing on DigitalOcean [RH:1465440]
 
