@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        0.7.9
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        Cloud instance init scripts
 License:        GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -109,6 +109,11 @@ Patch23:        cloud-init-0.7.9-nm-resolvconf.patch
 # https://git.launchpad.net/cloud-init/commit/?id=4f0f171c29bb9abb5cbb6f9adbe68015089aeed9
 # https://git.launchpad.net/cloud-init/commit/?id=951863c211ab0f8c43a9443d080dbbe0f6b454a6
 Patch24:        cloud-init-0.7.9-fs-setup-cmd.patch
+
+# resizefs: pass mount point to xfs_growfs
+# https://bugzilla.redhat.com/show_bug.cgi?id=1490505
+# https://code.launchpad.net/~dustymabe/cloud-init/+git/cloud-init/+merge/330701
+Patch25: cloud-init-0.7.9-resizefs-pass-mount-point-to-xfs_growfs.patch
 
 BuildArch:      noarch
 
@@ -242,6 +247,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Fri Sep 15 2017 Dusty Mabe <dusty@dustymabe.com> - 0.7.9-9
+- Fix issues with growing xfs filesystems [RH:1490505]
+
 * Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-8
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
 
