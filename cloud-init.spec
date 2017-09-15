@@ -200,6 +200,10 @@ cp -p %{SOURCE1} $RPM_BUILD_ROOT/%{_sysconfdir}/cloud/cloud.cfg
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d
 cp -p tools/21-cloudinit.conf $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d/21-cloudinit.conf
 
+# Add in hook-dhclient to help enable azure
+# https://bugzilla.redhat.com/show_bug.cgi?id=1477333
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/dhcp/dhclient-exit-hooks.d
+cp -p tools/hook-dhclient $RPM_BUILD_ROOT/%{_sysconfdir}/dhcp/dhclient-exit-hooks.d/hook-dhclient
 
 %check
 nosetests-%{python3_version} tests/unittests/
@@ -230,6 +234,7 @@ nosetests-%{python3_version} tests/unittests/
 %dir               %{_sysconfdir}/rsyslog.d
 %config(noreplace) %{_sysconfdir}/rsyslog.d/21-cloudinit.conf
 %{_sysconfdir}/NetworkManager/dispatcher.d/hook-network-manager
+%{_sysconfdir}/dhcp/dhclient-exit-hooks.d/hook-dhclient
 /lib/udev/rules.d/66-azure-ephemeral.rules
 %{_unitdir}/cloud-config.service
 %{_unitdir}/cloud-final.service
@@ -249,6 +254,7 @@ nosetests-%{python3_version} tests/unittests/
 %changelog
 * Fri Sep 15 2017 Dusty Mabe <dusty@dustymabe.com> - 0.7.9-9
 - Fix issues with growing xfs filesystems [RH:1490505]
+- Add in hook-dhclient to help enable azure [RH:1477333]
 
 * Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.9-8
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
