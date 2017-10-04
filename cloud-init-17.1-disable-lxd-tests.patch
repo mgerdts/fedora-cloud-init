@@ -1,0 +1,17 @@
+Index: cloud-init-17.1/tests/cloud_tests/platforms/__init__.py
+===================================================================
+--- cloud-init-17.1.orig/tests/cloud_tests/platforms/__init__.py
++++ cloud-init-17.1/tests/cloud_tests/platforms/__init__.py
+@@ -2,12 +2,10 @@
+ 
+ """Main init."""
+ 
+-from tests.cloud_tests.platforms import lxd
+ from tests.cloud_tests.platforms import nocloudkvm
+ 
+ PLATFORMS = {
+     'nocloud-kvm': nocloudkvm.NoCloudKVMPlatform,
+-    'lxd': lxd.LXDPlatform,
+ }
+ 
+ 

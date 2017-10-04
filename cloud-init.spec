@@ -1,119 +1,19 @@
 Name:           cloud-init
-Version:        0.7.9
-Release:        9%{?dist}
+Version:        17.1
+Release:        1%{?dist}
 Summary:        Cloud instance init scripts
-License:        GPLv3
+License:        ASL 2.0 or GPLv3
 URL:            http://launchpad.net/cloud-init
 
 Source0:        https://launchpad.net/cloud-init/trunk/%{version}/+download/%{name}-%{version}.tar.gz
-Source1:        cloud-init-fedora.cfg
-Source2:        cloud-init-README.fedora
-Source3:        cloud-init-tmpfiles.conf
+Source1:        cloud-init-tmpfiles.conf
 
-Patch0:         cloud-init-0.7.8-fedora.patch
-
-# Fix rsyslog log filtering
-# https://code.launchpad.net/~gholms/cloud-init/rsyslog-programname/+merge/186906
-Patch1:         cloud-init-0.7.5-rsyslog-programname.patch
-
-# Add 3 ecdsa-sha2-nistp* ssh key types now that they are standardized
-# https://bugzilla.redhat.com/show_bug.cgi?id=1151824
-# https://bugs.launchpad.net/cloud-init/+bug/1658174
-# https://git.launchpad.net/cloud-init/commit/?id=853df0a0e85002582694b88db886f206f64b23c7
-Patch3:         cloud-init-0.7.9-ecdsa.patch
-
-# Use dnf instead of yum when available
-# https://bugzilla.redhat.com/show_bug.cgi?id=1194451
-# https://git.launchpad.net/cloud-init/commit/?id=a3daf184fd47dede8d91588281437453bd38fc1c
-Patch7:         cloud-init-0.7.9-dnf.patch
-
-# Skip apt-source tests that are sensitive to the system's hostname
-# https://bugs.launchpad.net/cloud-init/+bug/1629149
-Patch8:         cloud-init-0.7.8-apt-dns-test.patch
+# Disable tests that require pylxd, which we don't have on Fedora
+Patch1:         cloud-init-17.1-disable-lxd-tests.patch
 
 # Do not write NM_CONTROLLED=no in generated interface config files
 # https://bugzilla.redhat.com/show_bug.cgi?id=1385172
-Patch11:        cloud-init-0.7.8-nm-controlled.patch
-
-# Disable tests that require pylxd
-Patch12:        cloud-init-0.7.9-disable-lxd-tests.patch
-
-# Fix calls to hostnamectl occurring before dbus is up
-# https://bugzilla.redhat.com/show_bug.cgi?id=1417025
-# Fix systemd dependency cycle with cloud-init and multi-user.target
-# https://bugzilla.redhat.com/show_bug.cgi?id=1428492
-# https://bugzilla.redhat.com/show_bug.cgi?id=1430511
-Patch13:        cloud-init-0.7.9-systemd-cloud-init.patch
-
-# Fix systemd dependency cycle with cloud-final and os-collect-config
-# https://bugzilla.redhat.com/show_bug.cgi?id=1420946
-# https://bugzilla.redhat.com/show_bug.cgi?id=1428492
-Patch14:        cloud-init-0.7.9-systemd-cloud-final.patch
-
-# Fix errors in network sysconfig handling
-# https://bugzilla.redhat.com/show_bug.cgi?id=1389530
-# https://bugs.launchpad.net/cloud-init/+bug/1665441
-# https://git.launchpad.net/cloud-init/commit/?id=f81d6c7bde2af206d449de593b35773068270c84
-Patch15:        cloud-init-0.7.9-sysconfig-iface.patch
-
-# Make > 3 name servers a warning, not a fatal error
-# This is useful when both IPv4 and IPv6 name servers are present.
-# https://bugs.launchpad.net/cloud-init/+bug/1670052
-# https://git.launchpad.net/cloud-init/commit/?id=657fd40f9ee692a817ec4614cd0d6cb0539ffabf
-Patch16:        cloud-init-0.7.9-gt3-nameservers.patch
-
-# Fix IPv6 gateways in network sysconfig
-# https://bugs.launchpad.net/cloud-init/+bug/1669504
-# https://git.launchpad.net/cloud-init/commit/?id=1d751a6f46f044e3c3827f3cef0e4a2e71d50fe7
-Patch17:        cloud-init-0.7.9-ipv6-gateway.patch
-
-# Order cloud-init.service after network.service and NetworkManager.service
-# cloud-init.service is meant to run when networking is up, but before
-# network-online.target unleashes other services in case people want to
-# set up networking customizations that run before those services do.
-# https://bugzilla.redhat.com/show_bug.cgi?id=1400249
-Patch18:        cloud-init-0.7.9-before-network-target.patch
-
-# Do not cache IAM instance profile credentials on disk
-# https://bugs.launchpad.net/cloud-init/+bug/1638312
-# https://git.launchpad.net/cloud-init/commit/?id=b71592ce0e0a9f9f9f225315015ca57b312ad30d
-Patch19:        cloud-init-0.7.9-credcache.patch
-
-# Make DigitalOcean data sources handle DNS servers similar to OpenStack
-# https://bugzilla.redhat.com/show_bug.cgi?id=1442463
-# https://bugs.launchpad.net/cloud-init/+bug/1675571
-# https://git.launchpad.net/cloud-init/commit/?id=5442b517ebe5508159a46d11d500fbc6ad854ba0
-# https://git.launchpad.net/cloud-init/commit/?id=493f6c3e923902d5d4f3d87e1cc4c726ea90ada4
-Patch20:        cloud-init-0.7.9-digitalocean-loopback.patch
-
-# Configure all NICs presented in DigitalOcean metadata
-# https://bugzilla.redhat.com/show_bug.cgi?id=1442463
-# https://git.launchpad.net/cloud-init/commit/?id=ff44056771416cb811879b13b97f88d8f2057071
-Patch21:        cloud-init-0.7.9-digitalocean-all-nics.patch
-
-# Make DigitalOcean use interface indexes, not names, to choose which one
-# to assign the link-local address used for metadata
-# https://bugzilla.redhat.com/show_bug.cgi?id=1442463
-# https://git.launchpad.net/cloud-init/commit/?id=dad97585be0f30202a5a351800f20d4432b94694
-Patch22:        cloud-init-0.7.9-digitalocean-ifindex.patch
-
-# Resolve a conflict between cloud-init and NetworkManager writing resolv.conf
-# https://bugzilla.redhat.com/show_bug.cgi?id=1454491
-# https://bugzilla.redhat.com/show_bug.cgi?id=1461959
-# https://bugs.launchpad.net/cloud-init/+bug/1693251
-# https://git.launchpad.net/cloud-init/commit/?id=67bab5bb804e2346673430868935f6bbcdb88f13
-Patch23:        cloud-init-0.7.9-nm-resolvconf.patch
-
-# Fix broken fs_setup cmd option handling
-# https://bugs.launchpad.net/cloud-init/+bug/1687712
-# https://git.launchpad.net/cloud-init/commit/?id=4f0f171c29bb9abb5cbb6f9adbe68015089aeed9
-# https://git.launchpad.net/cloud-init/commit/?id=951863c211ab0f8c43a9443d080dbbe0f6b454a6
-Patch24:        cloud-init-0.7.9-fs-setup-cmd.patch
-
-# resizefs: pass mount point to xfs_growfs
-# https://bugzilla.redhat.com/show_bug.cgi?id=1490505
-# https://code.launchpad.net/~dustymabe/cloud-init/+git/cloud-init/+merge/330701
-Patch25: cloud-init-0.7.9-resizefs-pass-mount-point-to-xfs_growfs.patch
+Patch2:         cloud-init-17.1-nm-controlled.patch
 
 BuildArch:      noarch
 
@@ -129,6 +29,7 @@ BuildRequires:  python3-configobj
 BuildRequires:  python3-httpretty >= 0.8.14-2
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-jsonpatch
+BuildRequires:  python3-jsonschema
 BuildRequires:  python3-mock
 BuildRequires:  python3-nose
 BuildRequires:  python3-oauthlib
@@ -138,6 +39,9 @@ BuildRequires:  python3-PyYAML
 BuildRequires:  python3-requests
 BuildRequires:  python3-six
 BuildRequires:  python3-unittest2
+# dnf is needed to make cc_ntp unit tests work
+# https://bugs.launchpad.net/cloud-init/+bug/1721573
+BuildRequires:  /usr/bin/dnf
 
 Requires:       e2fsprogs
 Requires:       iproute
@@ -148,6 +52,7 @@ Requires:       procps
 Requires:       python3-configobj
 Requires:       python3-jinja2
 Requires:       python3-jsonpatch
+Requires:       python3-jsonschema
 Requires:       python3-oauthlib
 Requires:       python3-prettytable
 Requires:       python3-pyserial
@@ -174,8 +79,6 @@ ssh keys and to let the user run various scripts.
 sed -i -e 's|#!/usr/bin/env python|#!/usr/bin/env python3|' \
        -e 's|#!/usr/bin/python|#!/usr/bin/python3|' tools/* cloudinit/ssh_util.py
 
-cp -p %{SOURCE2} README.fedora
-
 
 %build
 %py3_build
@@ -184,26 +87,18 @@ cp -p %{SOURCE2} README.fedora
 %install
 %py3_install -- --init-system=systemd
 
-# Don't ship the tests
-rm -r $RPM_BUILD_ROOT%{python3_sitelib}/tests
+python3 tools/render-cloudcfg --variant fedora > $RPM_BUILD_ROOT/%{_sysconfdir}/cloud/cloud.cfg
 
 mkdir -p $RPM_BUILD_ROOT/var/lib/cloud
 
 # /run/cloud-init needs a tmpfiles.d entry
 mkdir -p $RPM_BUILD_ROOT/run/cloud-init
 mkdir -p $RPM_BUILD_ROOT/%{_tmpfilesdir}
-cp -p %{SOURCE3} $RPM_BUILD_ROOT/%{_tmpfilesdir}/%{name}.conf
-
-# We supply our own config file since our software differs from Ubuntu's.
-cp -p %{SOURCE1} $RPM_BUILD_ROOT/%{_sysconfdir}/cloud/cloud.cfg
+cp -p %{SOURCE1} $RPM_BUILD_ROOT/%{_tmpfilesdir}/%{name}.conf
 
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d
 cp -p tools/21-cloudinit.conf $RPM_BUILD_ROOT/%{_sysconfdir}/rsyslog.d/21-cloudinit.conf
 
-# Add in hook-dhclient to help enable azure
-# https://bugzilla.redhat.com/show_bug.cgi?id=1477333
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/dhcp/dhclient-exit-hooks.d
-cp -p tools/hook-dhclient $RPM_BUILD_ROOT/%{_sysconfdir}/dhcp/dhclient-exit-hooks.d/hook-dhclient
 
 %check
 nosetests-%{python3_version} tests/unittests/
@@ -222,8 +117,8 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %files
-%license LICENSE
-%doc ChangeLog README.fedora
+%license LICENSE LICENSE-Apache2.0 LICENSE-GPLv3
+%doc ChangeLog
 %doc doc/*
 %config(noreplace) %{_sysconfdir}/cloud/cloud.cfg
 %dir               %{_sysconfdir}/cloud/cloud.cfg.d
@@ -252,6 +147,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Wed Oct  4 2017 Garrett Holmstrom <gholms@fedoraproject.org> - 17.1-1
+- Updated to 17.1
+
 * Fri Sep 15 2017 Dusty Mabe <dusty@dustymabe.com> - 0.7.9-9
 - Fix issues with growing xfs filesystems [RH:1490505]
 - Add in hook-dhclient to help enable azure [RH:1477333]

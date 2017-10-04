@@ -1,0 +1,291 @@
+Index: cloud-init-17.1/cloudinit/net/sysconfig.py
+===================================================================
+--- cloud-init-17.1.orig/cloudinit/net/sysconfig.py
++++ cloud-init-17.1/cloudinit/net/sysconfig.py
+@@ -230,7 +230,6 @@ class Renderer(renderer.Renderer):
+     iface_defaults = tuple([
+         ('ONBOOT', True),
+         ('USERCTL', False),
+-        ('NM_CONTROLLED', False),
+         ('BOOTPROTO', 'none'),
+     ])
+ 
+Index: cloud-init-17.1/tests/unittests/test_net.py
+===================================================================
+--- cloud-init-17.1.orig/tests/unittests/test_net.py
++++ cloud-init-17.1/tests/unittests/test_net.py
+@@ -146,7 +146,6 @@ GATEWAY=172.19.3.254
+ HWADDR=fa:16:3e:ed:9a:59
+ IPADDR=172.19.1.34
+ NETMASK=255.255.252.0
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -214,7 +213,6 @@ IPADDR=172.19.1.34
+ IPADDR1=10.0.0.10
+ NETMASK=255.255.252.0
+ NETMASK1=255.255.255.0
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -304,7 +302,6 @@ IPV6ADDR_SECONDARIES="2001:DB9::10/64 20
+ IPV6INIT=yes
+ IPV6_DEFAULTGW=2001:DB8::1
+ NETMASK=255.255.252.0
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -428,7 +425,6 @@ NETWORK_CONFIGS = {
+                 BOOTPROTO=none
+                 DEVICE=eth1
+                 HWADDR=cf:d6:af:48:e8:80
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no"""),
+@@ -440,7 +436,6 @@ NETWORK_CONFIGS = {
+                 HWADDR=c0:d6:9f:2c:e8:80
+                 IPADDR=192.168.21.3
+                 NETMASK=255.255.255.0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no"""),
+@@ -552,7 +547,6 @@ NETWORK_CONFIGS = {
+                 IPV6ADDR=2001:1::1/64
+                 IPV6INIT=yes
+                 NETMASK=255.255.255.0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no
+@@ -794,14 +788,12 @@ pre-down route del -net 10.0.0.0 netmask
+                 DHCPV6C=yes
+                 IPV6INIT=yes
+                 MACADDR=aa:bb:cc:dd:ee:ff
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Bond
+                 USERCTL=no"""),
+             'ifcfg-bond0.200': textwrap.dedent("""\
+                 BOOTPROTO=dhcp
+                 DEVICE=bond0.200
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 PHYSDEV=bond0
+                 TYPE=Ethernet
+@@ -817,7 +809,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 IPV6INIT=yes
+                 IPV6_DEFAULTGW=2001:4800:78ff:1b::1
+                 NETMASK=255.255.255.0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 PRIO=22
+                 STP=off
+@@ -827,7 +818,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 BOOTPROTO=none
+                 DEVICE=eth0
+                 HWADDR=c0:d6:9f:2c:e8:80
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no"""),
+@@ -841,7 +831,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 MTU=1500
+                 NETMASK=255.255.255.0
+                 NETMASK1=255.255.255.0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 PHYSDEV=eth0
+                 TYPE=Ethernet
+@@ -852,7 +841,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 DEVICE=eth1
+                 HWADDR=aa:d6:9f:2c:e8:80
+                 MASTER=bond0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 SLAVE=yes
+                 TYPE=Ethernet
+@@ -862,7 +850,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 DEVICE=eth2
+                 HWADDR=c0:bb:9f:2c:e8:80
+                 MASTER=bond0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 SLAVE=yes
+                 TYPE=Ethernet
+@@ -872,7 +859,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 BRIDGE=br0
+                 DEVICE=eth3
+                 HWADDR=66:bb:9f:2c:e8:80
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no"""),
+@@ -881,7 +867,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 BRIDGE=br0
+                 DEVICE=eth4
+                 HWADDR=98:bb:9f:2c:e8:80
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no"""),
+@@ -889,7 +874,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 BOOTPROTO=dhcp
+                 DEVICE=eth5
+                 HWADDR=98:bb:9f:2c:e8:8a
+-                NM_CONTROLLED=no
+                 ONBOOT=no
+                 TYPE=Ethernet
+                 USERCTL=no""")
+@@ -1171,7 +1155,6 @@ pre-down route del -net 10.0.0.0 netmask
+         IPV6INIT=yes
+         NETMASK=255.255.255.0
+         NETMASK1=255.255.255.0
+-        NM_CONTROLLED=no
+         ONBOOT=yes
+         TYPE=Bond
+         USERCTL=no
+@@ -1181,7 +1164,6 @@ pre-down route del -net 10.0.0.0 netmask
+         DEVICE=bond0s0
+         HWADDR=aa:bb:cc:dd:e8:00
+         MASTER=bond0
+-        NM_CONTROLLED=no
+         ONBOOT=yes
+         SLAVE=yes
+         TYPE=Ethernet
+@@ -1199,7 +1181,6 @@ pre-down route del -net 10.0.0.0 netmask
+         DEVICE=bond0s1
+         HWADDR=aa:bb:cc:dd:e8:01
+         MASTER=bond0
+-        NM_CONTROLLED=no
+         ONBOOT=yes
+         SLAVE=yes
+         TYPE=Ethernet
+@@ -1236,7 +1217,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 BOOTPROTO=none
+                 DEVICE=en0
+                 HWADDR=aa:bb:cc:dd:e8:00
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no"""),
+@@ -1252,7 +1232,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 IPV6_DEFAULTGW=2001:1::1
+                 NETMASK=255.255.255.0
+                 NETMASK1=255.255.255.0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 PHYSDEV=en0
+                 TYPE=Ethernet
+@@ -1293,7 +1272,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 DEVICE=br0
+                 IPADDR=192.168.2.2
+                 NETMASK=255.255.255.0
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 PRIO=22
+                 STP=off
+@@ -1307,7 +1285,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 HWADDR=52:54:00:12:34:00
+                 IPV6ADDR=2001:1::100/96
+                 IPV6INIT=yes
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no
+@@ -1319,7 +1296,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 HWADDR=52:54:00:12:34:01
+                 IPV6ADDR=2001:1::101/96
+                 IPV6INIT=yes
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no
+@@ -1393,7 +1369,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 HWADDR=52:54:00:12:34:00
+                 IPADDR=192.168.1.2
+                 NETMASK=255.255.255.0
+-                NM_CONTROLLED=no
+                 ONBOOT=no
+                 TYPE=Ethernet
+                 USERCTL=no
+@@ -1403,7 +1378,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 DEVICE=eth1
+                 HWADDR=52:54:00:12:34:aa
+                 MTU=1480
+-                NM_CONTROLLED=no
+                 ONBOOT=yes
+                 TYPE=Ethernet
+                 USERCTL=no
+@@ -1412,7 +1386,6 @@ pre-down route del -net 10.0.0.0 netmask
+                 BOOTPROTO=none
+                 DEVICE=eth2
+                 HWADDR=52:54:00:12:34:ff
+-                NM_CONTROLLED=no
+                 ONBOOT=no
+                 TYPE=Ethernet
+                 USERCTL=no
+@@ -1685,7 +1658,6 @@ class TestSysConfigRendering(CiTestCase)
+ BOOTPROTO=dhcp
+ DEVICE=eth1000
+ HWADDR=07-1C-C6-75-A4-BE
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -1805,7 +1777,6 @@ GATEWAY=10.0.2.2
+ HWADDR=52:54:00:12:34:00
+ IPADDR=10.0.2.15
+ NETMASK=255.255.255.0
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -1826,7 +1797,6 @@ USERCTL=no
+ #
+ BOOTPROTO=dhcp
+ DEVICE=eth0
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+Index: cloud-init-17.1/tests/unittests/test_distros/test_netconfig.py
+===================================================================
+--- cloud-init-17.1.orig/tests/unittests/test_distros/test_netconfig.py
++++ cloud-init-17.1/tests/unittests/test_distros/test_netconfig.py
+@@ -481,7 +481,6 @@ DEVICE=eth0
+ GATEWAY=192.168.1.254
+ IPADDR=192.168.1.5
+ NETMASK=255.255.255.0
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -498,7 +497,6 @@ USERCTL=no
+ #
+ BOOTPROTO=dhcp
+ DEVICE=eth1
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -632,7 +630,6 @@ DEVICE=eth0
+ IPV6ADDR=2607:f0d0:1002:0011::2/64
+ IPV6INIT=yes
+ IPV6_DEFAULTGW=2607:f0d0:1002:0011::1
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
+@@ -647,7 +644,6 @@ USERCTL=no
+ #
+ BOOTPROTO=dhcp
+ DEVICE=eth1
+-NM_CONTROLLED=no
+ ONBOOT=yes
+ TYPE=Ethernet
+ USERCTL=no
