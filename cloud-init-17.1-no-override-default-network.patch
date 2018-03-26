@@ -1,19 +1,25 @@
 diff -rup cloud-init-17.1.orig/cloudinit/net/sysconfig.py cloud-init-17.1/cloudinit/net/sysconfig.py
 --- cloud-init-17.1.orig/cloudinit/net/sysconfig.py	2018-03-26 19:22:35.693111559 +0200
-+++ cloud-init-17.1/cloudinit/net/sysconfig.py	2018-03-26 22:08:31.436719091 +0200
-@@ -590,6 +590,12 @@ class Renderer(renderer.Renderer):
-         if network_state.use_ipv6:
-             netcfg.append('NETWORKING_IPV6=yes')
-             netcfg.append('IPV6_AUTOCONF=no')
++++ cloud-init-17.1/cloudinit/net/sysconfig.py	2018-03-26 23:47:41.424803588 +0200
+@@ -586,7 +586,17 @@ class Renderer(renderer.Renderer):
+ 
+         # always write /etc/sysconfig/network configuration
+         sysconfig_path = util.target_path(target, "etc/sysconfig/network")
+-        netcfg = [_make_header(), 'NETWORKING=yes']
 +        # Make sure that existing lines, other than overriding ones, remain
++        netcfg = []
 +        for line in util.load_file(sysconfig_path, quiet=True).split('\n'):
++            if 'cloud-init' in line:
++                break
 +            if not line.startswith(('NETWORKING=',
 +                                    'IPV6_AUTOCONF=',
 +                                    'NETWORKING_IPV6=')):
 +                netcfg.append(line)
-         util.write_file(sysconfig_path, "\n".join(netcfg) + "\n", file_mode)
- 
- 
++        # Now generate the cloud-init portion of sysconfig/network
++        netcfg.extend([_make_header(), 'NETWORKING=yes'])
+         if network_state.use_ipv6:
+             netcfg.append('NETWORKING_IPV6=yes')
+             netcfg.append('IPV6_AUTOCONF=no')
 diff -rup cloud-init-17.1.orig/tests/unittests/test_distros/test_netconfig.py cloud-init-17.1/tests/unittests/test_distros/test_netconfig.py
 --- cloud-init-17.1.orig/tests/unittests/test_distros/test_netconfig.py	2018-03-26 19:22:35.717111557 +0200
 +++ cloud-init-17.1/tests/unittests/test_distros/test_netconfig.py	2018-03-26 22:08:25.008717651 +0200

@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        17.1
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Cloud instance init scripts
 License:        ASL 2.0 or GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -151,6 +151,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Mon Mar 26 2018 Patrick Uiterwijk <puiterwijk@redhat.com> - 17.1-4
+- Make sure the patch does not add infinitely many entries
+
 * Mon Mar 26 2018 Patrick Uiterwijk <puiterwijk@redhat.com> - 17.1-3
 - Add patch to retain old values of /etc/sysconfig/network
 
