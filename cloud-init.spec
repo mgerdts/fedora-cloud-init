@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        17.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Cloud instance init scripts
 License:        ASL 2.0 or GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -14,6 +14,10 @@ Patch1:         cloud-init-17.1-disable-lxd-tests.patch
 # Do not write NM_CONTROLLED=no in generated interface config files
 # https://bugzilla.redhat.com/show_bug.cgi?id=1385172
 Patch2:         cloud-init-17.1-nm-controlled.patch
+
+# Keep old properties in /etc/sysconfig/network
+# https://bugzilla.redhat.com/show_bug.cgi?id=1558641
+Patch3:          cloud-init-17.1-no-override-default-network.patch
 
 BuildArch:      noarch
 
@@ -147,6 +151,9 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Mon Mar 26 2018 Patrick Uiterwijk <puiterwijk@redhat.com> - 17.1-3
+- Add patch to retain old values of /etc/sysconfig/network
+
 * Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 17.1-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
