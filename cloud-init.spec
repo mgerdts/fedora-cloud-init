@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        17.1
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Cloud instance init scripts
 License:        ASL 2.0 or GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -18,6 +18,10 @@ Patch2:         cloud-init-17.1-nm-controlled.patch
 # Keep old properties in /etc/sysconfig/network
 # https://bugzilla.redhat.com/show_bug.cgi?id=1558641
 Patch3:          cloud-init-17.1-no-override-default-network.patch
+
+# Enable dhcp for interfaces on EC2 instances with only local addresses.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1569321
+Patch4:          cloud-init-17.1-fix-local-ipv4-only.patch
 
 BuildArch:      noarch
 
@@ -151,6 +155,10 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Sat Apr 21 2018 Lars Kellogg-Stedman <lars@redhat.com> - 17.1-5
+- Enable dhcp on EC2 interfaces with only local ipv4 addresses [RH:1569321]
+  (cherry pick upstream commit eb292c1)
+
 * Mon Mar 26 2018 Patrick Uiterwijk <puiterwijk@redhat.com> - 17.1-4
 - Make sure the patch does not add infinitely many entries
 
