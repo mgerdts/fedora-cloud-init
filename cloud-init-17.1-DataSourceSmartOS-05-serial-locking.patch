@@ -1,0 +1,146 @@
+From 6dc61d38c1e0201c02df19350a1e3a86e27e65ce Mon Sep 17 00:00:00 2001
+From: Mike Gerdts <mike.gerdts@joyent.com>
+Date: Mon, 23 Apr 2018 09:29:39 -0400
+Subject: [PATCH 5/5] DataSourceSmartOS: add locking of serial device.
+
+cloud-init and mdata-get each have their own implementation of the
+SmartOS metadata protocol.  If cloud-init and other services that call
+mdata-get are run concurrently, crosstalk on the serial port can cause
+them both to become confused.
+
+This change makes it so that cloud-init uses the same cooperative
+locking scheme that's used by mdata-get, thus preventing cross-talk
+between mdata-get and cloud-init.
+
+For testing, a VM running on a SmartOS host and pyserial are required.
+If the tests are run on a platform other than SmartOS, those that use a
+real serial port are skipped.  pyserial remains commented in
+requirements.txt because most testers will not be running atop SmartOS.
+
+LP: #1746605
+---
+ cloudinit/sources/DataSourceSmartOS.py        |  2 +
+ .../unittests/test_datasource/test_smartos.py | 67 ++++++++++++++++++-
+ 2 files changed, 67 insertions(+), 2 deletions(-)
+
+diff --git a/cloudinit/sources/DataSourceSmartOS.py b/cloudinit/sources/DataSourceSmartOS.py
+index 5c385b70..51f19262 100644
+--- a/cloudinit/sources/DataSourceSmartOS.py
++++ b/cloudinit/sources/DataSourceSmartOS.py
+@@ -23,6 +23,7 @@
+ import base64
+ import binascii
+ import errno
++import fcntl
+ import json
+ import os
+ import random
+@@ -523,6 +524,7 @@ class JoyentMetadataSerialClient(JoyentMetadataClient):
+             if not ser.isOpen():
+                 raise SystemError("Unable to open %s" % self.device)
+             self.fp = ser
++            fcntl.lockf(ser, fcntl.LOCK_EX)
+         self._flush()
+         self._negotiate()
+ 
+diff --git a/tests/unittests/test_datasource/test_smartos.py b/tests/unittests/test_datasource/test_smartos.py
+index 095a84df..d72615ba 100644
+--- a/tests/unittests/test_datasource/test_smartos.py
++++ b/tests/unittests/test_datasource/test_smartos.py
+@@ -16,23 +16,27 @@ from __future__ import print_function
+ 
+ from binascii import crc32
+ import json
++import multiprocessing
+ import os
+ import os.path
+ import re
+ import shutil
++import signal
+ import stat
+ import tempfile
++import unittest2
+ import uuid
+ 
+ from cloudinit import serial
+ from cloudinit.sources import DataSourceSmartOS
+ from cloudinit.sources.DataSourceSmartOS import (
+-    convert_smartos_network_data as convert_net)
++    convert_smartos_network_data as convert_net,
++    SMARTOS_ENV_KVM, SERIAL_DEVICE, get_smartos_environ)
+ 
+ import six
+ 
+ from cloudinit import helpers as c_helpers
+-from cloudinit.util import b64e
++from cloudinit.util import (b64e, subp)
+ 
+ from cloudinit.tests.helpers import mock, FilesystemMockingTestCase, TestCase
+ 
+@@ -1022,4 +1026,63 @@ class TestNetworkConversion(TestCase):
+         found = convert_net(SDC_NICS_SINGLE_GATEWAY)
+         self.assertEqual(expected, found)
+ 
++
++@unittest2.skipUnless(get_smartos_environ() == SMARTOS_ENV_KVM,
++                      "Only supported on KVM and bhyve guests under SmartOS")
++@unittest2.skipUnless(os.access(SERIAL_DEVICE, os.W_OK),
++                      "Requires write access to " + SERIAL_DEVICE)
++class TestSerialConcurrency(TestCase):
++    """
++       This class tests locking on an actual serial port, and as such can only
++       be run in a kvm or bhyve guest running on a SmartOS host.  A test run on
++       a metadata socket will not be valid because a metadata socket ensures
++       there is only one session over a connection.  In contrast, in the
++       absence of proper locking multiple processes opening the same serial
++       port can corrupt each others' exchanges with the metadata server.
++    """
++    def setUp(self):
++        self.mdata_proc = multiprocessing.Process(target=self.start_mdata_loop)
++        self.mdata_proc.start()
++        super(TestSerialConcurrency, self).setUp()
++
++    def tearDown(self):
++        # os.kill() rather than mdata_proc.terminate() to avoid console spam.
++        os.kill(self.mdata_proc.pid, signal.SIGKILL)
++        self.mdata_proc.join()
++        super(TestSerialConcurrency, self).tearDown()
++
++    def start_mdata_loop(self):
++        """
++           The mdata-get command is repeatedly run in a separate process so
++           that it may try to race with metadata operations performed in the
++           main test process.  Use of mdata-get is better than two processes
++           using the protocol implementation in DataSourceSmartOS because we
++           are testing to be sure that cloud-init and mdata-get respect each
++           others locks.
++        """
++        rcs = list(range(0, 256))
++        while True:
++            subp(['mdata-get', 'sdc:routes'], rcs=rcs)
++
++    def test_all_keys(self):
++        self.assertIsNotNone(self.mdata_proc.pid)
++        ds = DataSourceSmartOS
++        keys = [tup[0] for tup in ds.SMARTOS_ATTRIB_MAP.values()]
++        keys.extend(ds.SMARTOS_ATTRIB_JSON.values())
++
++        client = ds.jmc_client_factory()
++        self.assertIsNotNone(client)
++
++        # The behavior that we are testing for was observed mdata-get running
++        # 10 times at roughly the same time as cloud-init fetched each key
++        # once.  cloud-init would regularly see failures before making it
++        # through all keys once.
++        for _ in range(0, 3):
++            for key in keys:
++                # We don't care about the return value, just that it doesn't
++                # thrown any exceptions.
++                client.get(key)
++
++        self.assertIsNone(self.mdata_proc.exitcode)
++
+ # vi: ts=4 expandtab
+-- 
+2.17.0
+

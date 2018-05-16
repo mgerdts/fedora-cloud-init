@@ -1,0 +1,93 @@
+From c67be7c37191bbde8722e041bc7852222c25aa7a Mon Sep 17 00:00:00 2001
+From: Mike Gerdts <mike.gerdts@joyent.com>
+Date: Fri, 20 Apr 2018 20:30:44 -0400
+Subject: [PATCH 3/5] DataSourceSmartOS: list() should always return a list
+
+If customer_metadata has no keys, the KEYS request returns an empty
+string. Callers of the list() method expect a list to be returned and
+will give a stack trace if this expectation is not met.
+
+LP: #1763480
+---
+ cloudinit/sources/DataSourceSmartOS.py        |  6 ++---
+ .../unittests/test_datasource/test_smartos.py | 26 +++++++++++++++++--
+ 2 files changed, 27 insertions(+), 5 deletions(-)
+
+diff --git a/cloudinit/sources/DataSourceSmartOS.py b/cloudinit/sources/DataSourceSmartOS.py
+index 58862b2f..ee06b963 100644
+--- a/cloudinit/sources/DataSourceSmartOS.py
++++ b/cloudinit/sources/DataSourceSmartOS.py
+@@ -452,9 +452,9 @@ class JoyentMetadataClient(object):
+ 
+     def list(self):
+         result = self.request(rtype='KEYS')
+-        if result:
+-            result = result.split('\n')
+-        return result
++        if not result:
++            return []
++        return result.split('\n')
+ 
+     def put(self, key, val):
+         param = b' '.join([base64.b64encode(i.encode())
+diff --git a/tests/unittests/test_datasource/test_smartos.py b/tests/unittests/test_datasource/test_smartos.py
+index 0e39dd61..c0a45712 100644
+--- a/tests/unittests/test_datasource/test_smartos.py
++++ b/tests/unittests/test_datasource/test_smartos.py
+@@ -319,6 +319,12 @@ MOCK_RETURNS = {
+ 
+ DMI_DATA_RETURN = 'smartdc'
+ 
++# Useful for calculating the length of a frame body.  A SUCCESS body will be
++# followed by more characters or be one character less if SUCCESS with no
++# payload.  See Section 4.3 of https://eng.joyent.com/mdata/protocol.html.
++SUCCESS_LEN = len('0123abcd SUCCESS ')
++NOTFOUND_LEN = len('0123abcd NOTFOUND')
++
+ 
+ class PsuedoJoyentClient(object):
+     def __init__(self, data=None):
+@@ -650,7 +656,7 @@ class TestJoyentMetadataClient(FilesystemMockingTestCase):
+         self.response_parts = {
+             'command': 'SUCCESS',
+             'crc': 'b5a9ff00',
+-            'length': 17 + len(b64e(self.metadata_value)),
++            'length': SUCCESS_LEN + len(b64e(self.metadata_value)),
+             'payload': b64e(self.metadata_value),
+             'request_id': '{0:08x}'.format(self.request_id),
+         }
+@@ -786,7 +792,7 @@ class TestJoyentMetadataClient(FilesystemMockingTestCase):
+     def test_get_metadata_returns_None_if_value_not_found(self):
+         self.response_parts['payload'] = ''
+         self.response_parts['command'] = 'NOTFOUND'
+-        self.response_parts['length'] = 17
++        self.response_parts['length'] = NOTFOUND_LEN
+         client = self._get_client()
+         client._checksum = lambda _: self.response_parts['crc']
+         self.assertIsNone(client.get('some_key'))
+@@ -837,6 +843,22 @@ class TestJoyentMetadataClient(FilesystemMockingTestCase):
+         client.open_transport()
+         self.assertTrue(reader.emptied)
+ 
++    def test_list_metadata_returns_list(self):
++        parts = ['foo', 'bar']
++        value = b64e('\n'.join(parts))
++        self.response_parts['payload'] = value
++        self.response_parts['crc'] = '40873553'
++        self.response_parts['length'] = SUCCESS_LEN + len(value)
++        client = self._get_client()
++        self.assertEqual(client.list(), parts)
++
++    def test_list_metadata_returns_empty_list_if_no_customer_metadata(self):
++        del self.response_parts['payload']
++        self.response_parts['length'] = SUCCESS_LEN - 1
++        self.response_parts['crc'] = '14e563ba'
++        client = self._get_client()
++        self.assertEqual(client.list(), [])
++
+ 
+ class TestNetworkConversion(TestCase):
+     def test_convert_simple(self):
+-- 
+2.17.0
+

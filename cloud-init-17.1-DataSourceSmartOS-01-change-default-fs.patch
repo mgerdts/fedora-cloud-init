@@ -1,0 +1,56 @@
+From 6e3e412d9fa223bf223c9967217cea406b3e5a47 Mon Sep 17 00:00:00 2001
+From: Mike Gerdts <mike.gerdts@joyent.com>
+Date: Wed, 18 Apr 2018 13:14:31 -0400
+Subject: [PATCH 1/5] DataSourceSmartOS: change default fs on ephemeral disk
+ from ext3 to ext4.
+
+ext3 is not able to support file system sizes that are needed in Joyent's
+cloud.  For the default block size of 4k, the maximum filesystem size
+for ext3 is 2^32 * 4096 = 16 TiB.
+
+This changes the default file system type from ext3 to ext4.
+
+LP: #1763511
+---
+ cloudinit/sources/DataSourceSmartOS.py   | 2 +-
+ doc/examples/cloud-config-disk-setup.txt | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/cloudinit/sources/DataSourceSmartOS.py b/cloudinit/sources/DataSourceSmartOS.py
+index 6c6902fd..a8cabe9f 100644
+--- a/cloudinit/sources/DataSourceSmartOS.py
++++ b/cloudinit/sources/DataSourceSmartOS.py
+@@ -108,7 +108,7 @@ BUILTIN_CLOUD_CONFIG = {
+                        'overwrite': False}
+     },
+     'fs_setup': [{'label': 'ephemeral0',
+-                  'filesystem': 'ext3',
++                  'filesystem': 'ext4',
+                   'device': 'ephemeral0'}],
+ }
+ 
+diff --git a/doc/examples/cloud-config-disk-setup.txt b/doc/examples/cloud-config-disk-setup.txt
+index dd91477d..43a62a26 100644
+--- a/doc/examples/cloud-config-disk-setup.txt
++++ b/doc/examples/cloud-config-disk-setup.txt
+@@ -37,7 +37,7 @@ fs_setup:
+ # Default disk definitions for SmartOS
+ # ------------------------------------
+ 
+-device_aliases: {'ephemeral0': '/dev/sdb'}
++device_aliases: {'ephemeral0': '/dev/vdb'}
+ disk_setup:
+     ephemeral0:
+          table_type: mbr
+@@ -46,7 +46,7 @@ disk_setup:
+ 
+ fs_setup:
+     - label: ephemeral0
+-      filesystem: ext3
++      filesystem: ext4
+       device: ephemeral0.0
+ 
+ # Cavaut for SmartOS: if ephemeral disk is not defined, then the disk will
+-- 
+2.17.0
+

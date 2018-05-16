@@ -1,6 +1,6 @@
 Name:           cloud-init
 Version:        17.1
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Cloud instance init scripts
 License:        ASL 2.0 or GPLv3
 URL:            http://launchpad.net/cloud-init
@@ -22,6 +22,21 @@ Patch3:          cloud-init-17.1-no-override-default-network.patch
 # Enable dhcp for interfaces on EC2 instances with only local addresses.
 # https://bugzilla.redhat.com/show_bug.cgi?id=1569321
 Patch4:          cloud-init-17.1-fix-local-ipv4-only.patch
+
+# DataSourceSmartOS: change default fs on ephemeral disk from ext3 to ext4
+Patch5:		cloud-init-17.1-DataSourceSmartOS-01-change-default-fs.patch
+
+# DataSourceSmartOS: fix hang when metadata service is down
+Patch6:		cloud-init-17.1-DataSourceSmartOS-02-metadata-protocol.patch
+
+# DataSourceSmartOS: list() should always return a list
+Patch7:		cloud-init-17.1-DataSourceSmartOS-03-list-always.patch
+
+# DataSourceSmartOS: sdc:hostname is ignored
+Patch8:		cloud-init-17.1-DataSourceSmartOS-04-sdc-hostname.patch
+
+# DataSourceSmartOS: add locking of serial device
+Patch9:		cloud-init-17.1-DataSourceSmartOS-05-serial-locking.patch
 
 BuildArch:      noarch
 
@@ -155,6 +170,18 @@ nosetests-%{python3_version} tests/unittests/
 
 
 %changelog
+* Wed May 16 2018 Mike Gerdts <mike.gerdts@joyent.com> - 17.1-6
+- DataSourceSmartOS: change default fs on ephemeral disk from ext3 to ext4 [LP:1763511]
+  (cherry pick upstream commit 025ddc0)
+- DataSourceSmartOS: fix hang when metadata service is down [LP:1667735]
+  (cherry pick upstream commit 4c573d0)
+- DataSourceSmartOS: list() should always return a list [LP:1763480]
+  (cherry pick upstream commit 8e11150)
+- DataSourceSmartOS: sdc:hostname is ignored [LP:1765085]
+  (cherry pick upstream commit 2347988)
+- DataSourceSmartOS: add locking of serial device [LP:1746605]
+  (cherry pick upstream commit 4ed1645)
+
 * Sat Apr 21 2018 Lars Kellogg-Stedman <lars@redhat.com> - 17.1-5
 - Enable dhcp on EC2 interfaces with only local ipv4 addresses [RH:1569321]
   (cherry pick upstream commit eb292c1)

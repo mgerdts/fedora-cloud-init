@@ -1,0 +1,94 @@
+From 4ec41475b273401035a54b6ebe9cccc9e15f7302 Mon Sep 17 00:00:00 2001
+From: Mike Gerdts <mike.gerdts@joyent.com>
+Date: Fri, 20 Apr 2018 20:56:36 -0400
+Subject: [PATCH 4/5] DataSourceSmartOS: sdc:hostname is ignored
+
+There are three potential sources of the hostname, one of which is
+documented SmartOS's vmadm(1M) via the hostname property.  That
+property's value is retrieved via the sdc:hostname key.  The other
+two sources for the hostname are a hostname key in customer_metadata
+and the VM's uuid (sdc:uuid).  Of these three, the sdc:hostname value
+is not used in a meaningful way by DataSourceSmartOS.
+
+This fix changes the fallback mechanism when hostname is not
+specified in customer_metadata.  The order of precedence for setting
+the hostname is now 1) hostname in customer_metadata,
+2) sdc:hostname, then 3) sdc:uuid.
+
+LP: #1765085
+---
+ cloudinit/sources/DataSourceSmartOS.py        | 10 +++++--
+ .../unittests/test_datasource/test_smartos.py | 28 +++++++++++++++++++
+ 2 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/cloudinit/sources/DataSourceSmartOS.py b/cloudinit/sources/DataSourceSmartOS.py
+index ee06b963..5c385b70 100644
+--- a/cloudinit/sources/DataSourceSmartOS.py
++++ b/cloudinit/sources/DataSourceSmartOS.py
+@@ -11,7 +11,7 @@
+ #    SmartOS hosts use a serial console (/dev/ttyS1) on KVM Linux Guests
+ #        The meta-data is transmitted via key/value pairs made by
+ #        requests on the console. For example, to get the hostname, you
+-#        would send "GET hostname" on /dev/ttyS1.
++#        would send "GET sdc:hostname" on /dev/ttyS1.
+ #        For Linux Guests running in LX-Brand Zones on SmartOS hosts
+ #        a socket (/native/.zonecontrol/metadata.sock) is used instead
+ #        of a serial console.
+@@ -270,8 +270,14 @@ class DataSourceSmartOS(sources.DataSource):
+         write_boot_content(u_data, u_data_f)
+ 
+         # Handle the cloud-init regular meta
++
++        # The hostname may or may not be qualified with the local domain name.
++        # This follows section 3.14 of RFC 2132.
+         if not md['local-hostname']:
+-            md['local-hostname'] = md['instance-id']
++            if md['hostname']:
++                md['local-hostname'] = md['hostname']
++            else:
++                md['local-hostname'] = md['instance-id']
+ 
+         ud = None
+         if md['user-data']:
+diff --git a/tests/unittests/test_datasource/test_smartos.py b/tests/unittests/test_datasource/test_smartos.py
+index c0a45712..095a84df 100644
+--- a/tests/unittests/test_datasource/test_smartos.py
++++ b/tests/unittests/test_datasource/test_smartos.py
+@@ -436,6 +436,34 @@ class TestSmartOSDataSource(FilesystemMockingTestCase):
+         self.assertEqual(MOCK_RETURNS['hostname'],
+                          dsrc.metadata['local-hostname'])
+ 
++    def test_hostname_if_no_sdc_hostname(self):
++        my_returns = MOCK_RETURNS.copy()
++        my_returns['sdc:hostname'] = 'sdc-' + my_returns['hostname']
++        dsrc = self._get_ds(mockdata=my_returns)
++        ret = dsrc.get_data()
++        self.assertTrue(ret)
++        self.assertEqual(my_returns['hostname'],
++                         dsrc.metadata['local-hostname'])
++
++    def test_sdc_hostname_if_no_hostname(self):
++        my_returns = MOCK_RETURNS.copy()
++        my_returns['sdc:hostname'] = 'sdc-' + my_returns['hostname']
++        del my_returns['hostname']
++        dsrc = self._get_ds(mockdata=my_returns)
++        ret = dsrc.get_data()
++        self.assertTrue(ret)
++        self.assertEqual(my_returns['sdc:hostname'],
++                         dsrc.metadata['local-hostname'])
++
++    def test_sdc_uuid_if_no_hostname_or_sdc_hostname(self):
++        my_returns = MOCK_RETURNS.copy()
++        del my_returns['hostname']
++        dsrc = self._get_ds(mockdata=my_returns)
++        ret = dsrc.get_data()
++        self.assertTrue(ret)
++        self.assertEqual(my_returns['sdc:uuid'],
++                         dsrc.metadata['local-hostname'])
++
+     def test_userdata(self):
+         dsrc = self._get_ds(mockdata=MOCK_RETURNS)
+         ret = dsrc.get_data()
+-- 
+2.17.0
+
